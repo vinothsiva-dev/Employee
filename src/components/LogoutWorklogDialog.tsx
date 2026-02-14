@@ -549,7 +549,7 @@ export function LogoutWorklogDialog({ open, onOpenChange, onConfirm }: Props) {
                 >
                   Cancel
                 </Button>
-                <Button onClick={goReview} className="!bg-sky-500 !text-white">
+                <Button onClick={goReview} className="!bg-black !text-white">
                   Review
                 </Button>
               </>
@@ -564,7 +564,7 @@ export function LogoutWorklogDialog({ open, onOpenChange, onConfirm }: Props) {
                   Back
                 </Button>
                 <Button
-                  className="!bg-sky-500 !text-white"
+                  className="!bg-black !text-white"
                   onClick={finalize}
                   disabled={submitting}
                 >

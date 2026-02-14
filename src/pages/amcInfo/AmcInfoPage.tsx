@@ -130,13 +130,13 @@ export default function AmcInfoPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize,sortOrder,sortBy]); // Dependencies updated
+  }, [currentPage, pageSize, sortOrder, sortBy]); // Dependencies updated
 
   // Trigger fetch when any relevant state changes
   useEffect(() => {
     fetchAmcList();
-   // alert("the effect")
-  }, [currentPage,sortBy,sortOrder]);
+    // alert("the effect")
+  }, [currentPage, sortBy, sortOrder]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -322,7 +322,7 @@ export default function AmcInfoPage() {
   const { state } = useSidebar();
 
   const handleSort = (field: any) => {
-    console.log(field,sortBy)
+    console.log(field, sortBy)
     if (sortBy == field) {
       // alert("hi")
       // If the same field is clicked, toggle the order
@@ -365,7 +365,7 @@ export default function AmcInfoPage() {
         <p className="text-3xl font-bold">AMC Info</p>
 
         <Button
-          className="!bg-sky-500 hover:!bg-sky-600 !text-white shadow-md"
+          className="!bg-black hover:!bg-sky-600 !text-white shadow-md"
           onClick={() => setIsSheetOpen(true)}
         >
           + Add New AMC Info

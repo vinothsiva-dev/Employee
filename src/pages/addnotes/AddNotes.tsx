@@ -324,7 +324,7 @@ export default function AddNotes() {
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
-                    className="shrink-0 !text-white !bg-sky-500"
+                    className="shrink-0 !text-white !bg-black"
                     onClick={() => setAddOpen(true)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -484,7 +484,7 @@ export default function AddNotes() {
                 Cancel
               </Button>
               <Button
-                className="!text-white !bg-sky-500"
+                className="!text-white !bg-black"
                 onClick={createNote}
                 disabled={creating}
               >
@@ -535,7 +535,7 @@ export default function AddNotes() {
               * required fields
             </p>
 
-           <DialogFooter className="mt-4 flex-shrink-0">
+            <DialogFooter className="mt-4 flex-shrink-0">
               <Button
                 variant="outline"
                 onClick={() => setEditing(null)}
@@ -544,7 +544,7 @@ export default function AddNotes() {
                 Cancel
               </Button>
               <Button
-                className="!text-white !bg-sky-500"
+                className="!text-white !bg-black"
                 onClick={saveEdit}
                 disabled={savingEdit}
               >

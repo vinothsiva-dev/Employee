@@ -976,7 +976,7 @@ export default function EmployeeAssetsForm() {
                     onClick={handleopen}
                     className={
                         viewMode === "grid"
-                            ? "!bg-sky-400 !text-white"
+                            ? "!bg-black !text-white"
                             : "!bg-white !shadow-md"
                     }
                     size="icon"
@@ -1026,7 +1026,7 @@ export default function EmployeeAssetsForm() {
                                                         onClick={() => setViewMode("grid")}
                                                         className={
                                                             viewMode === "grid"
-                                                                ? "!bg-sky-400 !text-white"
+                                                                ? "!bg-black !text-white"
                                                                 : "!bg-white !shadow-md"
                                                         }
                                                         size="icon"
@@ -1053,7 +1053,7 @@ export default function EmployeeAssetsForm() {
                                                         onClick={() => setViewMode("table")}
                                                         className={
                                                             viewMode === "table"
-                                                                ? "!bg-sky-400 !text-white"
+                                                                ? "!bg-black !text-white"
                                                                 : "!bg-white !shadow-md"
                                                         }
                                                         size="icon"
@@ -1086,7 +1086,7 @@ export default function EmployeeAssetsForm() {
 
                     </>)}
                     <Button
-                        className="!bg-sky-500 hover:!bg-sky-600 !text-white shadow-md"
+                        className="!bg-black hover:!bg-sky-600 !text-white shadow-md"
                         onClick={setSheetOpen}
                         style={{ marginRight: '10rem' }}
                     >
@@ -1426,7 +1426,7 @@ export default function EmployeeAssetsForm() {
                         </div>
                         <Button
                             form="assets-form"
-                            className="!bg-sky-500 hover:!bg-sky-600 !text-white shadow-md"
+                            className="!bg-black hover:!bg-sky-600 !text-white shadow-md"
                             style={{ right: 25, bottom: 2, position: 'fixed', background: 'blue' }}
                             disabled={loading}
                         >

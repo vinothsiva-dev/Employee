@@ -134,7 +134,8 @@ button {
 }
 
 button:hover {
-  border-color: #646cff;
+  /* border-color: #646cff; */
+  border-color: #111;
 }
 
 button:focus,

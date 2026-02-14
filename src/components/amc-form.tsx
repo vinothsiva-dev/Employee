@@ -246,7 +246,7 @@ export function AmcForm({
                 />
 
 
-                <Button type="submit" className="w-full !bg-sky-500 !hover:bg-sky-600 !text-white" disabled={isSubmitting}>
+                <Button type="submit" className="w-full !bg-black !hover:bg-sky-600 !text-white" disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : (initialData ? 'Update AMC Info' : 'Create AMC Info')}
                 </Button>
             </form>

@@ -66,7 +66,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
             onClick={onClick}
             aria-label={ariaLabel}
             disabled={disabled}
-            className={`h-8 px-2 ${active && "!bg-sky-500 !text-white"}`}
+            className={`h-8 px-2 ${active && "!bg-black !text-white"}`}
             {...rest}
           >
             {children}

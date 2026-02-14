@@ -214,7 +214,7 @@ function CalendarDayButton({
         // rounded rules for ranges
         "data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md",
         // “active” selected look
-        "data-[selected=true]:!bg-sky-500 data-[selected=true]:text-white data-[selected=true]:shadow-sm data-[selected=true]:ring-2 data-[selected=true]:ring-ring/60 data-[selected=true]:ring-offset-0 data-[selected=true]:font-semibold",
+        "data-[selected=true]:!bg-black data-[selected=true]:text-white data-[selected=true]:shadow-sm data-[selected=true]:ring-2 data-[selected=true]:ring-ring/60 data-[selected=true]:ring-offset-0 data-[selected=true]:font-semibold",
         // keep range-middle softer
         "data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground",
         // today hint — but don’t overpower selected

@@ -548,7 +548,7 @@ export default function SidebarComp({
                       isActive={location.pathname === item.url}
                       className={`rounded-xl transition-all duration-200 ${location.pathname === item.url ||
                         (location.pathname === "/" && index === 0)
-                        ? "!bg-sky-500 !text-white shadow-lg"
+                        ? "!bg-black !text-white shadow-lg"
                         : "hover:!bg-slate-100 !text-black hover:!text-black"
                         } `}
                     >

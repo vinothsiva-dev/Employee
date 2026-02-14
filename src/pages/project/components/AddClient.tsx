@@ -28,7 +28,7 @@ import {
 import { Option, ProjectWithTasks } from "@/types/projectTypes";
 import { toISOFromDateInput } from "../../../../utils/projectUtils.js";
 import { createClinet } from "@/api/createClient"; // keeping your API name
-import { updateClient } from "@/api/updateClient"; 
+import { updateClient } from "@/api/updateClient";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/toast/ToastProvider"; // ✅ your in-house toast
 
@@ -109,7 +109,7 @@ export const AddClient: React.FC<AddClientSheetProps> = ({
   const hydrateFromClient = useCallback(
     (c: any) => {
       console.log(c.name)
-      setName(c.name ?c.name: "");
+      setName(c.name ? c.name : "");
       // map owner id -> select option
       const opt = c.owner
         ? employeeOptions.find((o) => o.value === c.owner) ?? undefined
@@ -239,7 +239,7 @@ export const AddClient: React.FC<AddClientSheetProps> = ({
   };
 
   const defaultTrigger = (
-    <Button className="gap-2 !bg-sky-500 !text-white">
+    <Button className="gap-2 !bg-black !text-white">
       <Plus className="h-4 w-4" />
       Add Client
     </Button>
@@ -358,7 +358,7 @@ export const AddClient: React.FC<AddClientSheetProps> = ({
           </SheetClose>
           <Button
             onClick={handleSave}
-            className="!bg-sky-500 !text-white"
+            className="!bg-black !text-white"
             disabled={!isValid}
             aria-disabled={!isValid}
             title={!isValid ? "Fill required fields to proceed" : undefined}

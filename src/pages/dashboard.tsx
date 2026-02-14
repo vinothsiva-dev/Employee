@@ -8,6 +8,7 @@ import {
   FolderOpen,
   TrendingUp,
   CheckCircle2,
+  UserCheck,
 } from "lucide-react";
 import StatsCards from "../components/StatsCards";
 import AttendanceOverview from "../components/AttendanceOverview";
@@ -16,6 +17,9 @@ import { useToast } from "@/toast/ToastProvider";
 import { api } from "@/lib/axios";
 import { QuickActionsCard } from "@/widgets/QuickActionsCard"; // ⬅️ new import
 import { useSidebar } from "@/components/ui/sidebar";
+import { parseISO } from 'date-fns';
+import { LeaveBalance, LeaveType } from "@/pages/leavemanagement/types";
+
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -23,7 +27,14 @@ export default function Dashboard() {
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [dashboardData, setdashboardData] = useState<any>();
-const {state}=useSidebar()
+  const [requests, setRequests] = useState<any[]>([]);
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
+  const [processingActions, setProcessingActions] = useState<Record<string, boolean>>({});
+  const [balances, setBalances] = useState<LeaveBalance[]>([]);
+  const [leaveType, setLeaveType] = useState<LeaveType>('EL');
+
+
+  const { state } = useSidebar()
   const handleAddEmployee = useCallback(() => {
     navigate("/Employees?AddEmployee");
   }, [navigate]);
@@ -55,8 +66,143 @@ const {state}=useSidebar()
     }
   };
 
+
+  const handleFetchAdminData = async () => {
+    try {
+      const [empRes, pendingRes, approvedRes, balanceRes] = await Promise.all([
+        api.get('/api/employee/getAllEmployee'),
+        api.get('/api/leave?status=Submitted'),
+        api.get('/api/leave?status=HR_Approved'),
+        api.get('/api/leave/all-balances')
+      ]);
+
+      if (empRes.status === 200) setAllEmployees(empRes.data);
+      if (balanceRes.status === 200) {
+        setBalances(balanceRes.data);
+      }
+
+      const pending = pendingRes.status === 200 ? pendingRes.data : [];
+      const approved = approvedRes.status === 200 ? approvedRes.data : [];
+
+      // Merge unique requests (just in case)
+      const allRequests = [...pending, ...approved].map((r: any) => ({ ...r, id: r._id }));
+      // Deduplicate by id if needed, though status filters should separate them
+      const uniqueRequests = Array.from(new Map(allRequests.map(item => [item.id, item])).values());
+
+      setRequests(uniqueRequests);
+
+    } catch (err) {
+      console.error("Failed to fetch admin data", err);
+    }
+  };
+
+  const handleHrDecision = async (requestId: string, approve: boolean) => {
+    if (processingActions[requestId]) return;
+    const hrApproverId = user?.employee_id ?? user?._id ?? user?.id;
+
+    try {
+      setProcessingActions(prev => ({ ...prev, [requestId]: true }));
+      const status = approve ? 'HR_Approved' : 'HR_Rejected';
+
+      // Optimistic UI update
+      setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
+
+      const res = await api.patch(`/api/leave/${requestId}/status`, {
+        status,
+        hrApproverId
+      });
+
+      if (res.status === 200) {
+        toast.success(`Leave ${approve ? 'approved' : 'rejected'} successfully.`);
+        // Remove from list after action
+        setRequests(prev => prev.filter(r => r.id !== requestId));
+      } else {
+        // Rollback on failure
+        setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Submitted' } : r));
+        toast.error('Action failed. Please try again.');
+      }
+    } catch (e) {
+      console.error(e);
+      setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Submitted' } : r));
+      toast.error('Error updating leave status.');
+    } finally {
+      setProcessingActions(prev => ({ ...prev, [requestId]: false }));
+    }
+  };
+
+  const hrPending = requests.filter((req) => req.status === 'Submitted');
+
+  const handleCancel = async (requestId: string) => {
+    if (processingActions[requestId]) return;
+    try {
+      setProcessingActions(prev => ({ ...prev, [requestId]: true }));
+      const res = await api.patch(`/api/leave/${requestId}/status`, { status: 'Cancelled' });
+      if (res.status === 200) {
+        toast.success('Leave cancelled.');
+        setRequests(prev => prev.filter(r => r.id !== requestId));
+      } else {
+        toast.error('Cancel failed.');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Error cancelling leave.');
+    } finally {
+      setProcessingActions(prev => ({ ...prev, [requestId]: false }));
+    }
+  };
+
+  const analyticsByEmployeeCorrected = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const record: Record<
+      string,
+      {
+        employee: any;
+        monthly: Record<LeaveType, number>;
+        yearly: Record<LeaveType, number>;
+      }
+    > = {};
+
+    allEmployees.forEach((emp) => {
+      if (emp.employee_id) {
+        record[emp.employee_id] = {
+          employee: emp,
+          monthly: { EL: 0, CL: 0, SL: 0 },
+          yearly: { EL: 0, CL: 0, SL: 0 },
+        };
+      }
+    });
+
+    balances.forEach(b => {
+      if (record[b.employeeId]) {
+        record[b.employeeId].yearly.EL = b.EL_available;
+        record[b.employeeId].yearly.CL = b.CL_available;
+        record[b.employeeId].yearly.SL = b.SL_available;
+      }
+    });
+
+    requests.forEach((req) => {
+      if (req.status !== 'HR_Approved' && req.status !== 'AutoProcessed') return;
+      const start = parseISO(req.startDate);
+      const month = start.getMonth();
+      const year = start.getFullYear();
+      const target = record[req.employeeId];
+      if (!target) return;
+
+      if (year === currentYear && month === currentMonth) {
+        target.monthly[req.leaveType] += req.totalDays;
+      }
+    });
+
+    return Object.values(record);
+  }, [requests, allEmployees, balances]);
+
   useEffect(() => {
-    if (user && user.role === "admin") handleGetAllDashboardData();
+    if (user && user.role === "admin") {
+      handleGetAllDashboardData();
+      handleFetchAdminData();
+    }
   }, [attendanceRefresh]);
   useEffect(() => {
     if (user && user.role !== "admin") {
@@ -68,9 +214,16 @@ const {state}=useSidebar()
       navigate("/Attendance", { replace: true });
     }
   }, [user]);
+  console.log(dashboardData?.attendaneState?.todayPresent)
+  // Button Styles
+  const btnBase = "!inline-flex !items-center !justify-center !rounded-full !text-xs !font-semibold !px-3 !py-2 !transition-all !disabled:opacity-60 !disabled:cursor-not-allowed";
+
+  const btnOutline = "!border !border-[#cbd5e1] !text-[#334155] !hover:bg-[#f8fafc]";
+  const btnApprove = "!bg-[#059669] !text-white !hover:bg-[#047857]";
+  const btnReject = "!bg-[#e11d48] !text-white !hover:bg-[#be123c]";
 
   return (
-    <div className={`flex flex-col ${state=="expanded"?"lg:w-[90%]":"lg:w-full"} w-full min-w-0 h-auto px-4 lg:px-8 py-6 box-border`}>
+    <div className={`flex flex-col ${state == "expanded" ? "lg:w-[90%]" : "lg:w-full"} w-full min-w-0 h-auto px-4 lg:px-8 py-6 box-border`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,27 +273,31 @@ const {state}=useSidebar()
           to="Attendance"
         />
         <StatsCards
-          title="Completed Tasks"
-          value={dashboardData?.completedTasks?.count}
-          icon={CheckCircle2}
+          title="Today's Attendance"
+          value={dashboardData?.attendaneState?.todayPresent}
+          icon={UserCheck}
           gradient="from-orange-500 to-orange-600"
           change={dashboardData?.completedTasks?.diff}
           isLoading={isLoading}
           to="Attendance"
         />
+        {/* <AttendanceOverview
+          isLoading={!!isLoading}
+          data={dashboardData?.attendaneState[0]?.value}
+        /> */}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid lg:grid-cols-1 gap-6 mb-6">
+        {/* <div className="lg:col-span-2 space-y-6">
           <AttendanceOverview
             isLoading={!!isLoading}
             data={dashboardData?.attendaneState}
           />
-        </div>
+        </div> */}
 
         <div className="space-y-6">
           {/* Reusable Quick Actions widget */}
-          <QuickActionsCard
+          {/* <QuickActionsCard
             title={
               <span className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" /> Quick Actions
@@ -156,9 +313,130 @@ const {state}=useSidebar()
               // { label: "Open Attendance", icon: Clock, to: "/Attendance" },
               // { label: "View Projects", icon: FolderOpen, to: "/Projects" },
             ]}
-          />
+          /> */}
+
+          <>
+            {user?.role === "admin" && (
+              <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">HR inbox</p> */}
+                  <h2 className="text-lg font-bold text-slate-900">HR inbox</h2>
+                  <p className="text-sm text-slate-500">{hrPending.length} pending</p>
+                </div>
+
+                <div className="space-y-3">
+                  {hrPending.length ? (
+                    hrPending.map((request) => {
+                      const busy = !!processingActions[request.id];
+                      const emp = allEmployees.find((e) => e.employee_id == request.employeeId);
+                      const empName = emp ? `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() : request.employeeId;
+
+                      return (
+                        <article
+                          key={request.id}
+                          className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-gradient-to-tr from-white via-slate-50 to-white shadow-sm"
+                        >
+                          <div className="flex justify-between gap-4">
+                            <p className="font-semibold">
+                              {empName} • {request.leaveType}
+                            </p>
+                            <span className="text-xs uppercase text-slate-500">{request.totalDays}d</span>
+                          </div>
+
+                          <p className="text-xs text-slate-500">
+                            {request.startDate} → {request.endDate}
+                          </p>
+
+                          {request.reason && (
+                            <p className="text-xs text-slate-600 line-clamp-2 italic">
+                              "{request.reason}"
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              className={`${btnBase} ${btnApprove}`}
+                              onClick={() => handleHrDecision(request.id, true)}
+                              disabled={busy}
+                            >
+                              {busy ? 'Processing...' : 'Approve'}
+                            </button>
+
+                            <button
+                              className={`${btnBase} ${btnReject}`}
+                              onClick={() => handleHrDecision(request.id, false)}
+                              disabled={busy}
+                            >
+                              {busy ? 'Processing...' : 'Reject'}
+                            </button>
+
+                            <button
+                              className={`${btnBase} ${btnOutline}`}
+                              onClick={() => handleCancel(request.id)}
+                              disabled={busy}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-slate-500">No pending leaves.</p>
+                  )}
+                </div>
+              </section>
+            )}
+          </>
+
         </div>
       </div>
+
+      <>
+        {user?.role === "admin" && (
+          <div className="grid lg:grid-cols-1 gap-2">
+            <div className="space-y-2">
+              <section className="grid gap-4 lg:grid-cols-2">
+                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase text-slate-500">Analytics</p>
+                    <p className="text-xs text-slate-400">Month vs year per employee</p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="text-left text-[10px] text-slate-400">
+                        <tr>
+                          <th className="pb-2">Employee</th>
+                          <th className="pb-2 text-center">Month EL</th>
+                          <th className="pb-2 text-center">Month CL</th>
+                          <th className="pb-2 text-center">Month SL</th>
+                          <th className="pb-2 text-center">Balance EL</th>
+                          <th className="pb-2 text-center">Balance CL</th>
+                          <th className="pb-2 text-center">Balance SL</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-slate-600">
+                        {analyticsByEmployeeCorrected.map((row) => (
+                          <tr key={row.employee.id ?? row.employee.employee_id} className="border-t border-slate-100">
+                            <td className="py-3 font-semibold">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
+                            <td className="py-3 text-center">{row.monthly.EL}</td>
+                            <td className="py-3 text-center">{row.monthly.CL}</td>
+                            <td className="py-3 text-center">{row.monthly.SL}</td>
+                            <td className="py-3 text-center">{row.yearly.EL}</td>
+                            <td className="py-3 text-center">{row.yearly.CL}</td>
+                            <td className="py-3 text-center">{row.yearly.SL}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              </section>
+            </div>
+          </div>
+        )}
+      </>
     </div>
   );
 }

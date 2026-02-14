@@ -139,9 +139,8 @@ export default function Worklogs() {
 
   return (
     <div
-      className={`flex flex-col ${
-        state == "expanded" ? "lg:w-[90%]" : "lg:w-full"
-      } w-full min-w-0 h-auto px-4 lg:px-8 py-6 box-border`}
+      className={`flex flex-col ${state == "expanded" ? "lg:w-[90%]" : "lg:w-full"
+        } w-full min-w-0 h-auto px-4 lg:px-8 py-6 box-border`}
     >
       {/* header rail */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -202,7 +201,7 @@ export default function Worklogs() {
             <Button variant="outline" onClick={onReset}>
               Reset
             </Button>
-            <Button onClick={onApply} className="!bg-sky-500 !text-white">
+            <Button onClick={onApply} className="!bg-black !text-white">
               <Filter className="mr-2 h-4 w-4" /> Apply
             </Button>
           </div>
@@ -317,16 +316,14 @@ function WorklogCard({ w }: { w: Worklog }) {
                 <div className="truncate font-medium">{t.taskName}</div>
                 <div className="flex shrink-0 gap-2">
                   <span
-                    className={`rounded border px-2 py-0.5 text-xs ${
-                      PRIORITY_BADGE[t.priority]
-                    }`}
+                    className={`rounded border px-2 py-0.5 text-xs ${PRIORITY_BADGE[t.priority]
+                      }`}
                   >
                     {t.priority}
                   </span>
                   <span
-                    className={`rounded border px-2 py-0.5 text-xs ${
-                      STATUS_BADGE[t.status]
-                    }`}
+                    className={`rounded border px-2 py-0.5 text-xs ${STATUS_BADGE[t.status]
+                      }`}
                   >
                     {t.status}
                   </span>
@@ -400,9 +397,8 @@ function WorklogTable({ rows }: { rows: Worklog[] }) {
                 </TableCell>
                 <TableCell>
                   <span
-                    className={`rounded border px-2 py-0.5 text-xs ${
-                      PRIORITY_BADGE[t.priority]
-                    }`}
+                    className={`rounded border px-2 py-0.5 text-xs ${PRIORITY_BADGE[t.priority]
+                      }`}
                   >
                     {t.priority}
                   </span>
@@ -418,9 +414,8 @@ function WorklogTable({ rows }: { rows: Worklog[] }) {
                 </TableCell>
                 <TableCell>
                   <span
-                    className={`rounded border px-2 py-0.5 text-xs ${
-                      STATUS_BADGE[t.status]
-                    }`}
+                    className={`rounded border px-2 py-0.5 text-xs ${STATUS_BADGE[t.status]
+                      }`}
                   >
                     {t.status}
                   </span>

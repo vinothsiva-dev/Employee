@@ -429,9 +429,8 @@ export default function Employees() {
 
   return (
     <div
-      className={`flex flex-col ${
-        state == "expanded" ? "lg:w-[90%]" : "lg:w-full"
-      } w-full max-w-none min-w-0 px-4 lg:px-8 py-6 space-y-4 lg:space-y-8`}
+      className={`flex flex-col ${state == "expanded" ? "lg:w-[90%]" : "lg:w-full"
+        } w-full max-w-none min-w-0 px-4 lg:px-8 py-6 space-y-4 lg:space-y-8`}
     >
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
         <div>
@@ -446,7 +445,7 @@ export default function Employees() {
           (user?.employee_id == "EMP001" && (
             <Popover open={openMore} onOpenChange={setOpenMore}>
               <PopoverTrigger asChild>
-                <Button className="!bg-sky-400 text-white shadow-lg">
+                <Button className="!bg-black text-white shadow-lg">
                   <span>More</span>
 
                   {isMoreLoading && <Spinner />}
@@ -520,7 +519,7 @@ export default function Employees() {
 
         <Button
           onClick={openAddForm}
-          className="!bg-sky-400 hover:!bg-slate-800 !text-white hover:!text-white shadow-lg"
+          className="!bg-black hover:!bg-slate-800 !text-white hover:!text-white shadow-lg"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Employee
@@ -594,7 +593,7 @@ export default function Employees() {
                       onClick={switchToGrid}
                       className={
                         viewMode === "grid"
-                          ? "!bg-sky-400 !text-white"
+                          ? "!bg-black !text-white"
                           : "!bg-white !shadow-md"
                       }
                       size="icon"
@@ -615,7 +614,7 @@ export default function Employees() {
                       onClick={switchToTable}
                       className={
                         viewMode === "table"
-                          ? "!bg-sky-400"
+                          ? "!bg-black !text-white"
                           : "!bg-white !shadow-md"
                       }
                       size="icon"
@@ -637,9 +636,8 @@ export default function Employees() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.25 }}
-              className={`grid grid-cols-1 sm:grid-cols-2 ${
-                state == "expanded" ? "lg:grid-cols-3" : "lg:grid-cols-4"
-              } gap-6`}
+              className={`grid grid-cols-1 sm:grid-cols-2 ${state == "expanded" ? "lg:grid-cols-3" : "lg:grid-cols-4"
+                } gap-6`}
               layout
             >
               {filteredEmployees.map((employee, index) => (

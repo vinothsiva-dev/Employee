@@ -192,7 +192,7 @@ const BulkMoreSheet: React.FC<Props> = ({
               onChange={(e) => setReason(e.target.value)}
             />
             <Button
-              className="!bg-sky-500 !text-white !w-full"
+              className="!bg-black !text-white !w-full"
               type="submit"
               disabled={submitting}
             >

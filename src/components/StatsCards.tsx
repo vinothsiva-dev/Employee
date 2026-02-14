@@ -29,14 +29,14 @@ export default function StatsCards({
     return (
       <Card className=" shadow-lg !w-full">
         <CardContent className="p-12">
-          <div className="flex items-center justify-between ">
-            <div className="space-y-2 h-[30px]">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-16" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="space-y-6">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-12 w-20" />
             </div>
-            <Skeleton className="h-12 w-12 rounded-xl" />
+            <Skeleton className="h-16 w-16 rounded-3xl" />
           </div>
-          <Skeleton className="h-4 w-20 mt-4" />
+          <Skeleton className="h-6 w-40 mt-6 rounded-lg" />
         </CardContent>
       </Card>
     );
@@ -51,9 +51,8 @@ export default function StatsCards({
       transition={{ duration: 0.3 }}
     >
       <Card
-        className={`rounded-[9px]  shadow-lg  hover:shadow-xl transition-shadow duration-300 w-full ${
-          to && "cursor-pointer"
-        } `}
+        className={`rounded-[9px]  shadow-lg  hover:shadow-xl transition-shadow duration-300 w-full ${to && "cursor-pointer"
+          } `}
         onClick={() => {
           if (to) {
             handleClick();

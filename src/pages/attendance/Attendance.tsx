@@ -93,9 +93,8 @@ const Attendance: React.FC = () => {
 
   return (
     <motion.div
-      className={`w-full ${
-        state == "expanded" ? "lg:w-[90%]" : "w-full"
-      } px-6 pb-16`}
+      className={`w-full ${state == "expanded" ? "lg:w-[90%]" : "w-full"
+        } px-6 pb-16`}
       variants={containerStagger}
       initial="hidden"
       animate="show"
@@ -194,9 +193,14 @@ const Attendance: React.FC = () => {
                 )}
               </AnimatePresence>
 
-              <style>{`
+              {/* <style>{`
                 .tab-trigger { transition: background-color .25s ease, color .25s ease, transform .2s ease; }
                 .tab-trigger[data-state="active"] { background-color: #33cdf3ff; color: white; }
+                .tab-trigger:hover { transform: translateY(-2px); }
+              `}</style> */}
+              <style>{`
+                .tab-trigger { transition: background-color .25s ease, color .25s ease, transform .2s ease; }
+                .tab-trigger[data-state="active"] { background-color: #111; color: white; }
                 .tab-trigger:hover { transform: translateY(-2px); }
               `}</style>
             </Tabs>

@@ -678,7 +678,7 @@ const LeaveManagement: React.FC = () => {
                                 <section className="grid gap-4 sm:grid-cols-3">
                                     {(['EL', 'CL', 'SL'] as LeaveType[]).map((type) => (
                                         <article key={type} className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-2xl p-5 shadow">
-                                            <p className="text-xs uppercase tracking-[0.4em] text-slate-200">
+                                            <p className="text-xs uppercase">
                                                 {type === 'EL' ? 'Earned' : type === 'CL' ? 'Casual' : 'Sick'}
                                             </p>
                                             <p className="text-3xl font-semibold">{availableBalance(userId, type)} days</p>
@@ -689,8 +689,10 @@ const LeaveManagement: React.FC = () => {
 
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
                                     <div>
-                                        <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Apply leave</p>
-                                        <h2 className="text-lg font-semibold">Submit a request</h2>
+                                        {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Apply leave</p>
+                                        <h2 className="text-lg font-semibold">Submit a request</h2> */}
+                                        <h2 className="text-lg font-bold text-slate-900">Apply leave</h2>
+                                        <p className="text-sm text-slate-500">Submit a request</p>
                                     </div>
 
                                     <div className="grid gap-3 sm:grid-cols-3">
@@ -740,7 +742,9 @@ const LeaveManagement: React.FC = () => {
                                 {showHolidayPanel ? (
                                     <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3 sticky top-6">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p>
+                                            {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p> */}
+                                            <h2 className="text-lg font-bold text-slate-900">Holiday calendar</h2>
+                                            {/* <p className="text-sm text-slate-500">Manage your leaves and holidays</p> */}
                                             <span className="text-xs text-slate-400">{holidayKeys.length} active</span>
                                         </div>
                                         <div className="space-y-3">
@@ -764,22 +768,22 @@ const LeaveManagement: React.FC = () => {
                                 ) : (
                                     <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3 sticky top-6">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Your focus</p>
+                                            <p className="text-xs uppercase text-slate-500">Your focus</p>
                                             <span className="text-xs text-slate-400">{filtered.length} requests</span>
                                         </div>
                                         <div className="space-y-3 text-sm">
                                             <div className={`rounded-2xl px-3 py-2 ${statusPalette.warning}`}>
-                                                <p className="text-[10px] uppercase tracking-[0.4em]">Pending</p>
+                                                <p className="text-[10px] uppercase">Pending</p>
                                                 <p className="font-semibold text-lg">
                                                     {filtered.filter((req) => req.status === 'Submitted').length}
                                                 </p>
                                             </div>
                                             <div className={`rounded-2xl px-3 py-2 ${statusPalette.success}`}>
-                                                <p className="text-[10px] uppercase tracking-[0.4em]">Approved days</p>
+                                                <p className="text-[10px] uppercase">Approved days</p>
                                                 <p className="font-semibold text-lg">{stats.EL + stats.CL + stats.SL} days</p>
                                             </div>
                                             <div className={`rounded-2xl px-3 py-2 ${statusPalette.info}`}>
-                                                <p className="text-[10px] uppercase tracking-[0.4em]">Upcoming</p>
+                                                <p className="text-[10px] uppercase">Upcoming</p>
                                                 {filtered
                                                     .filter((req) => req.status === 'HR_Approved')
                                                     .slice(0, 2)
@@ -803,7 +807,8 @@ const LeaveManagement: React.FC = () => {
 
                         <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
                             <div className="flex items-center justify-between">
-                                <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave history</p>
+                                {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave history</p> */}
+                                <h2 className="text-lg font-bold text-slate-900">Leave history</h2>
                                 <select
                                     value={filterStatus}
                                     onChange={(event) => setFilterStatus(event.target.value as LeaveStatus | '')}
@@ -829,7 +834,7 @@ const LeaveManagement: React.FC = () => {
                                                         {request.startDate} → {request.endDate}
                                                     </p>
                                                 </div>
-                                                <span className="text-xs uppercase tracking-[0.3em] text-slate-500">{request.status}</span>
+                                                <span className="text-xs uppercase">{request.status}</span>
                                             </div>
                                             <p className="text-xs text-slate-400 mt-2">{request.reason || 'No reason provided'}</p>
                                         </article>
@@ -844,7 +849,8 @@ const LeaveManagement: React.FC = () => {
                     <>
                         <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
                             <div className="flex items-center justify-between">
-                                <p className="text-xs uppercase tracking-[0.4em] text-slate-500">HR inbox</p>
+                                {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">HR inbox</p> */}
+                                <h2 className="text-lg font-bold text-slate-900">HR inbox</h2>
                                 <p className="text-sm text-slate-500">{hrPending.length} pending</p>
                             </div>
 
@@ -908,7 +914,8 @@ const LeaveManagement: React.FC = () => {
                         <section className="grid gap-4 lg:grid-cols-2">
                             <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-4">
                                 <div className="flex items-center justify-between gap-3">
-                                    <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p>
+                                    {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p> */}
+                                    <h2 className="text-lg font-bold text-slate-900">Holiday calendar</h2>
                                     <button
                                         className={`${btnBase} ${btnOutline}`}
                                         onClick={() => setShowHolidayEditor((prev) => !prev)}
@@ -967,7 +974,8 @@ const LeaveManagement: React.FC = () => {
 
                             <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-4">
                                 <div className="flex items-center justify-between gap-3">
-                                    <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave policy</p>
+                                    {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave policy</p> */}
+                                    <h2 className="text-lg font-bold text-slate-900">Leave policy</h2>
                                     <button
                                         className={`${btnBase} ${btnOutline}`}
                                         onClick={() => setShowPolicyEditor((prev) => !prev)}
@@ -1028,13 +1036,13 @@ const LeaveManagement: React.FC = () => {
                         <section className="grid gap-4 lg:grid-cols-2">
                             <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Analytics</p>
+                                    <p className="text-xs uppercase text-slate-500">Analytics</p>
                                     <p className="text-xs text-slate-400">Month vs year per employee</p>
                                 </div>
 
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
-                                        <thead className="text-left text-[10px] uppercase tracking-[0.4em] text-slate-400">
+                                        <thead className="text-left text-[10px] text-slate-400">
                                             <tr>
                                                 <th className="pb-2">Employee</th>
                                                 <th className="pb-2 text-center">Month EL</th>
@@ -1063,7 +1071,7 @@ const LeaveManagement: React.FC = () => {
                             </article>
 
                             <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
-                                <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Audit log</p>
+                                <p className="text-xs uppercase text-slate-500">Audit log</p>
                                 <div className="space-y-2 text-sm">
                                     {logs.slice(0, 4).map((log) => (
                                         <div key={log.id} className="flex justify-between">

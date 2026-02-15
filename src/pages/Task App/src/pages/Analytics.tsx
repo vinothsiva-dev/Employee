@@ -74,7 +74,7 @@ const Analytics: React.FC = () => {
             <p className="text-xs uppercase tracking-wider text-slate-400">Reports</p>
             <h2 className="text-xl font-semibold text-slate-900">Weekly & monthly deliveries</h2>
           </div>
-          <button className="text-xs text-indigo-600 font-semibold">Export Excel</button>
+          <button className="!text-xs !text-indigo-600 !font-semibold">Export Excel</button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="rounded-2xl border border-slate-100 p-4 bg-slate-50">

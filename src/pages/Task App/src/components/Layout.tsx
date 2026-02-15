@@ -28,10 +28,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen text-slate-900" style={{ backgroundColor: '#f6f8fb', fontFamily: "'Inter', sans-serif" }}>
-      <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+    <div className="!min-h-screen !text-slate-900" style={{ backgroundColor: '#f6f8fb', fontFamily: "'Inter', sans-serif" }}>
+      <header className="!bg-white !border-b !border-slate-200 !shadow-sm">
+        <div className="!max-w-7xl !mx-auto !px-4 !sm:px-6 !lg:px-8">
+          <div className="!                                       flex items-center justify-between h-16">
             <LogoMark />
             <div className="flex items-center gap-4">
               <nav className="hidden md:flex items-center gap-3 text-sm font-medium text-slate-600">

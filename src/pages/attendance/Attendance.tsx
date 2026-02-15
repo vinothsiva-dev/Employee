@@ -8,10 +8,10 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 // -------- Styles --------
 const kpiCard = {
-  base: "rounded-xl border bg-white shadow-sm hover:shadow-md transition-shadow p-4",
-  title: "text-sm font-medium text-slate-500",
-  value: "text-2xl font-semibold text-slate-900",
-  sub: "text-xs text-slate-500",
+  base: "rounded-xl border bg-gradient-to-br from-slate-600 to-slate-700 text-white shadow hover:shadow-md transition-shadow p-4",
+  title: "text-sm font-medium text-slate-500 text-white",
+  value: "text-2xl font-semibold text-white",
+  sub: "text-xs text-slate-500 text-white",
 } as const;
 
 const pageSize = 10;
@@ -45,6 +45,10 @@ const slideTabs = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
 };
 
+import { Skeleton } from "@/components/ui/skeleton";
+
+// ... imports
+
 const Attendance: React.FC = () => {
   const { user, attendanceRefresh, setAttendanceRefresh } = useAuth();
 
@@ -52,6 +56,7 @@ const Attendance: React.FC = () => {
   const [monthlyAbsents, setMonthlyAbsents] = useState<number>(0);
   const [currentViewPresent, setcurrentViewPresent] = useState<number>(0);
   const [CurrentViewAbsent, setCurrentViewAbsent] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAdmin = user?.role === "admin";
   const [activeTab, setActiveTab] = useState<string>(
@@ -115,20 +120,26 @@ const Attendance: React.FC = () => {
         className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
         variants={containerStagger}
       >
-        {cards.map((c) => (
-          <motion.div
-            key={c.key}
-            variants={fadeInUp as any}
-            whileHover={softHover.hover as any}
-            whileTap={softHover.tap}
-            className={kpiCard.base}
-            aria-live="polite"
-          >
-            <div className={kpiCard.title}>{c.title}</div>
-            <div className={kpiCard.value}>{c.value}</div>
-            <div className={kpiCard.sub}>{c.sub}</div>
-          </motion.div>
-        ))}
+        {isLoading
+          ? [1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-gray-100 rounded-xl p-5 shadow border border-gray-200"
+            >
+              <Skeleton className="h-4 w-24 mb-2 bg-gray-300" />
+              <Skeleton className="h-8 w-16 mb-2 bg-gray-300" />
+              <Skeleton className="h-3 w-32 bg-gray-300" />
+            </div>
+          ))
+          : cards.map((c) => (
+            <article key={c.key} className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 hover:shadow-md transition-shadow shadow">
+              <p className="text-xs">
+                {c.title}
+              </p>
+              <p className="text-3xl font-semibold">{c.value}</p>
+              <p className="text-xs mt-1">{c.sub}</p>
+            </article>
+          ))}
       </motion.div>
 
       {/* Tabs + Content */}
@@ -165,6 +176,7 @@ const Attendance: React.FC = () => {
                           setMonthlyPresents={setMonthlyPresents}
                           setcurrentViewPresent={setcurrentViewPresent}
                           setCurrentViewAbsent={setCurrentViewAbsent}
+                          setParentLoading={setIsLoading}
                         />
                       </motion.div>
                     </TabsContent>
@@ -186,6 +198,7 @@ const Attendance: React.FC = () => {
                           setMonthlyPresents={setMonthlyPresents}
                           setcurrentViewPresent={setcurrentViewPresent}
                           setCurrentViewAbsent={setCurrentViewAbsent}
+                          setParentLoading={setIsLoading}
                         />
                       </motion.div>
                     </TabsContent>
@@ -223,6 +236,7 @@ const Attendance: React.FC = () => {
                 setMonthlyPresents={setMonthlyPresents}
                 setcurrentViewPresent={setcurrentViewPresent}
                 setCurrentViewAbsent={setCurrentViewAbsent}
+                setParentLoading={setIsLoading}
               />
             </motion.div>
           </AnimatePresence>

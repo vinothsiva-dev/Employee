@@ -315,128 +315,181 @@ export default function Dashboard() {
             ]}
           /> */}
 
-          <>
-            {user?.role === "admin" && (
-              <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">HR inbox</p> */}
-                  <h2 className="text-lg font-bold text-slate-900">HR inbox</h2>
-                  <p className="text-sm text-slate-500">{hrPending.length} pending</p>
-                </div>
+          {isLoading ? (
+            <div className="grid lg:grid-cols-1 gap-2">
+              <div className="space-y-6">
+                {/* HR Inbox Skeleton */}
+                <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="h-6 bg-slate-200 rounded w-24"></div>
+                    <div className="h-4 bg-slate-200 rounded w-16"></div>
+                  </div>
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => (
+                      <article key={i} className="border border-slate-100 rounded-2xl p-4 space-y-3">
+                        <div className="flex justify-between gap-4">
+                          <div className="h-5 bg-slate-200 rounded w-40"></div>
+                          <div className="h-4 bg-slate-200 rounded w-8"></div>
+                        </div>
+                        <div className="h-3 bg-slate-200 rounded w-32"></div>
+                        <div className="flex gap-2 mt-2">
+                          <div className="h-8 bg-slate-200 rounded-full w-20"></div>
+                          <div className="h-8 bg-slate-200 rounded-full w-20"></div>
+                          <div className="h-8 bg-slate-200 rounded-full w-20"></div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
 
-                <div className="space-y-3">
-                  {hrPending.length ? (
-                    hrPending.map((request) => {
-                      const busy = !!processingActions[request.id];
-                      const emp = allEmployees.find((e) => e.employee_id == request.employeeId);
-                      const empName = emp ? `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() : request.employeeId;
+                {/* Analytics Skeleton */}
+                <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 bg-slate-200 rounded w-20"></div>
+                    <div className="h-4 bg-slate-200 rounded w-32"></div>
+                  </div>
+                  <div className="space-y-4 mt-4">
+                    <div className="flex justify-between">
+                      {[1, 2, 3, 4, 5, 6, 7].map((j) => (
+                        <div key={j} className="h-3 bg-slate-200 rounded w-12"></div>
+                      ))}
+                    </div>
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-8 bg-slate-200 rounded w-full"></div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </div>
+          ) : (
+            <>
+              {user?.role === "admin" && (
+                <div className="grid lg:grid-cols-1 gap-2">
+                  <div className="space-y-2">
+                    <section className="grid gap-4 lg:grid-cols-2">
 
-                      return (
-                        <article
-                          key={request.id}
-                          className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-gradient-to-tr from-white via-slate-50 to-white shadow-sm"
-                        >
-                          <div className="flex justify-between gap-4">
-                            <p className="font-semibold">
-                              {empName} • {request.leaveType}
-                            </p>
-                            <span className="text-xs uppercase text-slate-500">{request.totalDays}d</span>
+                      {/* Analytics */}
+                      <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs uppercase text-slate-500">Analytics</p>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="text-left text-[10px] text-slate-400">
+                              <tr>
+                                <th className="pb-2">Employee</th>
+                                <th className="pb-2 text-center border-r border-slate-100" colSpan={3}>Month</th>
+                                <th className="pb-2 text-center" colSpan={3}>Balance</th>
+                              </tr>
+                              <tr>
+                                <th className="pb-2"></th>
+                                <th className="pb-2 text-center text-xs">EL</th>
+                                <th className="pb-2 text-center text-xs">CL</th>
+                                <th className="pb-2 text-center text-xs border-r border-slate-100">SL</th>
+                                <th className="pb-2 text-center text-xs">EL</th>
+                                <th className="pb-2 text-center text-xs">CL</th>
+                                <th className="pb-2 text-center text-xs">SL</th>
+                              </tr>
+                            </thead>
+                            <tbody className="text-slate-600">
+                              {analyticsByEmployeeCorrected.map((row) => (
+                                <tr key={row.employee.id ?? row.employee.employee_id} className="border-t border-slate-100">
+                                  <td className="py-3 font-semibold text-xs">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
+                                  <td className="py-3 text-center">{row.monthly.EL}</td>
+                                  <td className="py-3 text-center">{row.monthly.CL}</td>
+                                  <td className="py-3 text-center border-r border-slate-100">{row.monthly.SL}</td>
+                                  <td className="py-3 text-center">{row.yearly.EL}</td>
+                                  <td className="py-3 text-center">{row.yearly.CL}</td>
+                                  <td className="py-3 text-center">{row.yearly.SL}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </article>
+
+                      {/* HR Inbox */}
+                      <div className="space-y-6">
+                        <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-slate-900">HR inbox</h2>
+                            <p className="text-sm text-slate-500">{hrPending.length} pending</p>
                           </div>
 
-                          <p className="text-xs text-slate-500">
-                            {request.startDate} → {request.endDate}
-                          </p>
+                          <div className="space-y-3">
+                            {hrPending.length ? (
+                              hrPending.map((request) => {
+                                const busy = !!processingActions[request.id];
+                                const emp = allEmployees.find((e) => e.employee_id == request.employeeId);
+                                const empName = emp ? `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() : request.employeeId;
 
-                          {request.reason && (
-                            <p className="text-xs text-slate-600 line-clamp-2 italic">
-                              "{request.reason}"
-                            </p>
-                          )}
+                                return (
+                                  <article
+                                    key={request.id}
+                                    className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-gradient-to-tr from-white via-slate-50 to-white shadow-sm"
+                                  >
+                                    <div className="flex justify-between gap-4">
+                                      <p className="font-semibold">
+                                        {empName} • {request.leaveType}
+                                      </p>
+                                      <span className="text-xs uppercase text-slate-500">{request.totalDays}d</span>
+                                    </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              className={`${btnBase} ${btnApprove}`}
-                              onClick={() => handleHrDecision(request.id, true)}
-                              disabled={busy}
-                            >
-                              {busy ? 'Processing...' : 'Approve'}
-                            </button>
+                                    <p className="text-xs text-slate-500">
+                                      {request.startDate} → {request.endDate}
+                                    </p>
 
-                            <button
-                              className={`${btnBase} ${btnReject}`}
-                              onClick={() => handleHrDecision(request.id, false)}
-                              disabled={busy}
-                            >
-                              {busy ? 'Processing...' : 'Reject'}
-                            </button>
+                                    {request.reason && (
+                                      <p className="text-xs text-slate-600 line-clamp-2 italic">
+                                        "{request.reason}"
+                                      </p>
+                                    )}
 
-                            <button
-                              className={`${btnBase} ${btnOutline}`}
-                              onClick={() => handleCancel(request.id)}
-                              disabled={busy}
-                            >
-                              Cancel
-                            </button>
+                                    <div className="flex flex-wrap gap-2">
+                                      <button
+                                        className={`${btnBase} ${btnApprove}`}
+                                        onClick={() => handleHrDecision(request.id, true)}
+                                        disabled={busy}
+                                      >
+                                        {busy ? 'Processing...' : 'Approve'}
+                                      </button>
+
+                                      <button
+                                        className={`${btnBase} ${btnReject}`}
+                                        onClick={() => handleHrDecision(request.id, false)}
+                                        disabled={busy}
+                                      >
+                                        {busy ? 'Processing...' : 'Reject'}
+                                      </button>
+
+                                      <button
+                                        className={`${btnBase} ${btnOutline}`}
+                                        onClick={() => handleCancel(request.id)}
+                                        disabled={busy}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </article>
+                                );
+                              })
+                            ) : (
+                              <p className="text-sm text-slate-500">No pending leaves.</p>
+                            )}
                           </div>
-                        </article>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-slate-500">No pending leaves.</p>
-                  )}
-                </div>
-              </section>
-            )}
-          </>
+                        </section>
+                      </div>
 
+
+                    </section>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
-
-      <>
-        {user?.role === "admin" && (
-          <div className="grid lg:grid-cols-1 gap-2">
-            <div className="space-y-2">
-              <section className="grid gap-4 lg:grid-cols-2">
-                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs uppercase text-slate-500">Analytics</p>
-                    <p className="text-xs text-slate-400">Month vs year per employee</p>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="text-left text-[10px] text-slate-400">
-                        <tr>
-                          <th className="pb-2">Employee</th>
-                          <th className="pb-2 text-center">Month EL</th>
-                          <th className="pb-2 text-center">Month CL</th>
-                          <th className="pb-2 text-center">Month SL</th>
-                          <th className="pb-2 text-center">Balance EL</th>
-                          <th className="pb-2 text-center">Balance CL</th>
-                          <th className="pb-2 text-center">Balance SL</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-slate-600">
-                        {analyticsByEmployeeCorrected.map((row) => (
-                          <tr key={row.employee.id ?? row.employee.employee_id} className="border-t border-slate-100">
-                            <td className="py-3 font-semibold">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
-                            <td className="py-3 text-center">{row.monthly.EL}</td>
-                            <td className="py-3 text-center">{row.monthly.CL}</td>
-                            <td className="py-3 text-center">{row.monthly.SL}</td>
-                            <td className="py-3 text-center">{row.yearly.EL}</td>
-                            <td className="py-3 text-center">{row.yearly.CL}</td>
-                            <td className="py-3 text-center">{row.yearly.SL}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </article>
-              </section>
-            </div>
-          </div>
-        )}
-      </>
     </div>
   );
 }

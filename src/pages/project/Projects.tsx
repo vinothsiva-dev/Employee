@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { useEmployees } from "@/hooks/useEmployee";
 import { useClients } from "@/hooks/useClient";
@@ -92,17 +93,35 @@ const Projects: React.FC = () => {
 
       {/* KPI Row */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className={kpiCard.base}>
+        {/* <div className={kpiCard.base}>
           <div className={kpiCard.title}>Total Clients</div>
           <div className={kpiCard.value}>{activeProjects}</div>
           <div className={kpiCard.sub}>Currently active</div>
-        </div>
-        <div className={kpiCard.base}>
-          <div className={kpiCard.title}>Due in 14 Days</div>
+        </div> */}
+        <article className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 shadow">
+          <p className="text-xs">Total Clients</p>
+          {isLoading ? (
+            <Skeleton className="h-9 w-16 bg-white/20 mt-1" />
+          ) : (
+            <p className="text-3xl font-semibold">{activeProjects}</p>
+          )}
+          <p className="text-xs mt-1">Currently active</p>
+        </article>
+        {/* <div className={kpiCard.base}>
+          <div className={kpiCard.title}>Due in 14 Days</div> 
           <div className={kpiCard.value}>{dueSoon}</div>
           <div className={kpiCard.sub}>Watch the runway</div>
-        </div>
-        <div className={kpiCard.base}>
+        </div> */}
+        <article className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 shadow">
+          <p className="text-xs">Due in 14 Days</p>
+          {isLoading ? (
+            <Skeleton className="h-9 w-16 bg-white/20 mt-1" />
+          ) : (
+            <p className="text-3xl font-semibold">{dueSoon}</p>
+          )}
+          <p className="text-xs mt-1">Watch the runway</p>
+        </article>
+        {/* <div className={kpiCard.base}>
           <div className={kpiCard.title}>At Risk / Blocked</div>
           <div className={kpiCard.value}>{riskCount}</div>
           <div className={kpiCard.sub}>Escalate proactively</div>
@@ -112,6 +131,23 @@ const Projects: React.FC = () => {
           <div className={kpiCard.value}>Name, Owner, Tags</div>
           <div className={kpiCard.sub}>Try “api”, “design”, “blocked”…</div>
         </div>
+        */}
+        <article className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 shadow">
+          <p className="text-xs">At Risk / Blocked</p>
+          {isLoading ? (
+            <Skeleton className="h-9 w-16 bg-white/20 mt-1" />
+          ) : (
+            <p className="text-3xl font-semibold">{riskCount}</p>
+          )}
+          <p className="text-xs mt-1">Escalate proactively</p>
+        </article>
+        <article className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 shadow">
+          <p className="text-xs">
+            Searchable Fields
+          </p>
+          <p className="text-2xl font-semibold">Name, Owner, Tags</p>
+          <p className="text-xs mt-1">Try “api”, “design”, “blocked”…</p>
+        </article>
       </div>
 
       {/* Toolbar */}
@@ -132,18 +168,17 @@ const Projects: React.FC = () => {
             </div>
           </div>
           <div className="text-xs text-slate-500">
-            {total} result{total === 1 ? "" : "s"}
+            {isLoading ? (
+              <Skeleton className="h-4 w-16" />
+            ) : (
+              `${total} result${total === 1 ? "" : "s"}`
+            )}
           </div>
         </div>
       </div>
 
       {/* Data card (kept inline for now; you can split into ClientTable/ClientRow next) */}
-      <div className="rounded-xl border bg-white shadow-sm">
-        {isLoading && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[2px] rounded-xl">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          </div>
-        )}
+      <div className="rounded-xl border bg-white shadow-sm relative min-h-[400px]">
         <div className="overflow-auto">
           <Table className="min-w-full text-sm">
             <TableHeader className="sticky top-0 z-10 bg-slate-50/80 backdrop-blur supports-[backdrop-filter]:bg-slate-50/60">
@@ -194,7 +229,18 @@ const Projects: React.FC = () => {
             </TableHeader>
 
             <TableBody>
-              {paged.length > 0 && !isLoading ? (
+              {isLoading ? (
+                Array.from({ length: 10 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                  </TableRow>
+                ))
+              ) : paged.length > 0 ? (
                 paged.map((p) => {
                   const due = parseISO(p.dueDate);
                   const isOpen = expandedId === p._id;
@@ -336,15 +382,21 @@ const Projects: React.FC = () => {
         {/* Footer / pagination */}
         <div className="flex flex-col items-center justify-between gap-3 border-t p-3 sm:flex-row">
           <div className="text-xs text-slate-600">
-            Showing{" "}
-            <span className="font-medium">
-              {total === 0 ? 0 : (page - 1) * pageSize + 1}
-            </span>{" "}
-            to{" "}
-            <span className="font-medium">
-              {Math.min(page * pageSize, total)}
-            </span>{" "}
-            of <span className="font-medium">{total}</span> clients
+            {isLoading ? (
+              <Skeleton className="h-4 w-32" />
+            ) : (
+              <>
+                Showing{" "}
+                <span className="font-medium">
+                  {total === 0 ? 0 : (page - 1) * pageSize + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-medium">
+                  {Math.min(page * pageSize, total)}
+                </span>{" "}
+                of <span className="font-medium">{total}</span> clients
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button

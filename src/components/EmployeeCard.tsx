@@ -43,7 +43,7 @@ export default function EmployeeCard({ employee, onEdit, canEdit }: any) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                <AvatarImage src={employee.profile_imageFile||employee.profile_image} />
+                <AvatarImage src={employee.profile_imageFile || employee.profile_image} />
                 <AvatarFallback className="bg-gradient-to-br from-slate-600  to-slate-700 text-white font-bold text-lg">
                   {employee.first_name?.[0]}
                   {employee.last_name?.[0]}
@@ -70,15 +70,13 @@ export default function EmployeeCard({ employee, onEdit, canEdit }: any) {
                   {employee.position}
                 </p>
                 <Badge
-                  className={`text-xs mt-1 ${
-                    statusColors[
-                      `${
-                        employee.status
-                          ? (employee.status as keyof typeof statusColors)
-                          : "active"
-                      }`
+                  className={`text-xs mt-1 ${statusColors[
+                    `${employee.status
+                      ? (employee.status as keyof typeof statusColors)
+                      : "active"
+                    }`
                     ]
-                  }`}
+                    }`}
                 >
                   {employee.status}
                 </Badge>

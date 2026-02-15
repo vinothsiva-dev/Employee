@@ -16,11 +16,11 @@ interface AmcTableProps {
         currentPage: number;
         pageSize: number;
     };
-    statusActive:String;
+    statusActive: String;
     onPageChange: (newPage: number) => void;
     loading: boolean;
     handleSort: (field: any) => void;
-    handleStatus:(field: any) => void;
+    handleStatus: (field: any) => void;
     // renderSort: (field: any) => void;
 }
 
@@ -100,15 +100,9 @@ export const amcColumns: ColumnDef<AmcInfo>[] = [
     },
 ];
 
-export function AmcTable({ data, onEdit, meta,statusActive, onPageChange, loading, handleSort,handleStatus }: AmcTableProps) {
+export function AmcTable({ data, onEdit, meta, statusActive, onPageChange, loading, handleSort, handleStatus }: AmcTableProps) {
     return (
         <div className="relative">
-            {loading && (
-                <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-20">
-                    <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
-                </div>
-            )}
-
             <DataTable
                 columns={amcColumns}
                 data={data}
@@ -116,6 +110,7 @@ export function AmcTable({ data, onEdit, meta,statusActive, onPageChange, loadin
                 statusActive={statusActive}
                 handleSort={handleSort}
                 handleStatus={handleStatus}
+                isLoading={loading}
             />
 
             {/* --- Pagination Controls --- */}

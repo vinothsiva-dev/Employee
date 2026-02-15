@@ -1,5 +1,7 @@
 // src/components/ui/data-table.tsx
 import * as React from 'react';
+import { Skeleton } from "@/components/ui/skeleton";
+
 import {
     ColumnDef,
     flexRender,
@@ -29,6 +31,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[];
     meta?: any; statusActive?: any;
     handleSort: (field: any) => void; handleStatus: (field: any) => void;
+    isLoading?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -36,6 +39,7 @@ export function DataTable<TData, TValue>({
     data,
     meta, statusActive,
     handleSort, handleStatus,
+    isLoading,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -150,7 +154,17 @@ export function DataTable<TData, TValue>({
                     ))}
                 </TableHeader>
                 <TableBody>
-                    {table.getRowModel().rows?.length ? (
+                    {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                {columns.map((_, j) => (
+                                    <TableCell key={j}>
+                                        <Skeleton className="h-4 w-full" />
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))
+                    ) : table.getRowModel().rows?.length ? (
                         table.getRowModel().rows.map((row) => (
                             <TableRow
                                 key={row.id}

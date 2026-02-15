@@ -33,9 +33,20 @@ import {
   Users,
   Clock,
   CalendarDays,
+  LayoutGrid,
+  Table as TableIcon,
+  Icon,
 } from "lucide-react";
 import { useToast } from "@/toast/ToastProvider";
 import { useSidebar } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { motion, AnimatePresence } from "framer-motion";
+import { c } from "node_modules/framer-motion/dist/types.d-Cjd591yU";
 
 // ---- types aligned with enriched API (no _id, no attendanceId) ----
 type WorklogTask = {
@@ -210,63 +221,153 @@ export default function Worklogs() {
         <Separator />
 
         <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
-          <Kpi
+          {/* <Kpi
             icon={<Users className="h-4 w-4" />}
             label="Records"
             value={data.length.toLocaleString()}
-          />
-          <Kpi
+          /> */}
+          <article className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 hover:shadow-md transition-shadow shadow">
+            {/* <Users className="h-4 w-4" /> */}
+            <div className="flex items-center gap-2">
+              <Users className="h-8 w-8" />
+              <div className="flex flex-col pl-2">
+                <p className="text-xs">
+                  Records
+                </p>
+                <p className="text-3xl font-semibold">{data.length.toLocaleString()}</p>
+              </div>
+            </div>
+            {/* <p className="text-xs mt-1">{from || to ? `${from || "…"} → ${to || "…"}` : "All time"}</p> */}
+          </article>
+          {/* <Kpi
             icon={<Clock className="h-4 w-4" />}
             label="Total Hours"
             value={totalHoursAll.toFixed(2)}
-          />
-          <Kpi
+          /> */}
+          <article className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 hover:shadow-md transition-shadow shadow">
+            <div className="flex items-center gap-2">
+              <Clock className="h-8 w-8" />
+              <div className="flex flex-col pl-2">
+                <p className="text-xs">
+                  Total Hours
+                </p>
+                <p className="text-3xl font-semibold">{totalHoursAll.toFixed(2)}</p>
+              </div>
+            </div>
+            {/* <p className="text-xs mt-1">{from || to ? `${from || "…"} → ${to || "…"}` : "All time"}</p> */}
+          </article>
+          {/* <Kpi
             icon={<CalendarDays className="h-4 w-4" />}
             label="Date Window"
             value={from || to ? `${from || "…"} → ${to || "…"}` : "All time"}
-          />
+          /> */}
+          <article className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 hover:shadow-md transition-shadow shadow">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-8 w-8" />
+              <div className="flex flex-col pl-2">
+                <p className="text-xs">
+                  Date Window
+                </p>
+                <p className="text-3xl font-semibold">{from || to ? `${from || "…"} → ${to || "…"}` : "All time"}</p>
+              </div>
+            </div>
+            {/* <p className="text-xs mt-1">{from || to ? `${from || "…"} → ${to || "…"}` : "All time"}</p> */}
+          </article>
         </div>
       </div>
 
       {/* view switcher */}
-      <Tabs
-        value={view}
-        onValueChange={(v) => setView(v as any)}
-        className="space-y-4"
-      >
-        <TabsList>
-          <TabsTrigger value="cards">Cards</TabsTrigger>
-          <TabsTrigger value="table">Table</TabsTrigger>
-        </TabsList>
+      {/* view switcher header */}
+      {/* view switcher header */}
+      <div className="flex justify-end w-full mb-4">
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={view === "cards" ? "secondary" : "outline"}
+                  onClick={() => setView("cards")}
+                  className={
+                    view === "cards"
+                      ? "!bg-black !text-white"
+                      : "!bg-white !shadow-md"
+                  }
+                  size="icon"
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Grid</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-        <TabsContent value="cards">
-          {loading ? (
-            <CardGridSkeleton />
-          ) : error ? (
-            <ErrorState message={error} onRetry={fetchData} />
-          ) : data.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {data.map((w, idx) => (
-                <WorklogCard key={`${w.employeeId}-${w.date}-${idx}`} w={w} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={view === "table" ? "secondary" : "outline"}
+                  onClick={() => setView("table")}
+                  className={
+                    view === "table"
+                      ? "!bg-black !text-white"
+                      : "!bg-white !shadow-md"
+                  }
+                  size="icon"
+                  aria-label="Table view"
+                >
+                  <TableIcon className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Table</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
 
-        <TabsContent value="table">
-          {loading ? (
-            <TableSkeleton />
-          ) : error ? (
-            <ErrorState message={error} onRetry={fetchData} />
-          ) : data.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <WorklogTable rows={data} />
-          )}
-        </TabsContent>
-      </Tabs>
+      <AnimatePresence mode="wait">
+        {view === "cards" ? (
+          <motion.div
+            key="cards-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {loading ? (
+              <CardGridSkeleton />
+            ) : error ? (
+              <ErrorState message={error} onRetry={fetchData} />
+            ) : data.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {data.map((w, idx) => (
+                  <WorklogCard key={`${w.employeeId}-${w.date}-${idx}`} w={w} />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="table-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {loading ? (
+              <TableSkeleton />
+            ) : error ? (
+              <ErrorState message={error} onRetry={fetchData} />
+            ) : data.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <WorklogTable rows={data} />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -360,7 +461,7 @@ function WorklogCard({ w }: { w: Worklog }) {
 
 function WorklogTable({ rows }: { rows: Worklog[] }) {
   return (
-    <div className="overflow-auto rounded-lg border bg-white">
+    <div className="overflow-auto rounded-lg border bg-white shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>

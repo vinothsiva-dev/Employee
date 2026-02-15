@@ -44,6 +44,7 @@ import {
 import { SortState, AttendanceRecord } from "@/types/attendanceTypes";
 import { useToast } from "@/toast/ToastProvider";
 import { api } from "@/lib/axios";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // --- helpers for OT status ---
 const parseOtToMinutes = (ot: unknown): number => {
@@ -128,6 +129,7 @@ const UserTable: React.FC<any> = ({
   setMonthlyAbsents,
   setCurrentViewAbsent,
   setcurrentViewPresent,
+  setParentLoading,
 }) => {
   const [sorting, setSorting] = useState<SortState>(null);
   const [activePreset, setActivePreset] = useState<Preset | null>(null);
@@ -144,6 +146,7 @@ const UserTable: React.FC<any> = ({
 
   const handleGetAttendanceData = async () => {
     setLoading(true);
+    setParentLoading?.(true);
     try {
       const response = await api.get(
         `/api/attendance/getAttendanceByEmployee?employeeId=${user?.employee_id}`
@@ -151,24 +154,24 @@ const UserTable: React.FC<any> = ({
       setAttendanceData(response.data.data);
     } catch (error) {
       console.error("Error fetching attendance data:", error);
-      toast.error(
-        "We couldn’t fetch your attendance records at this moment. Please try again shortly.",
-        {
-          title: "Attendance fetch failed",
-          durationMs: 5000,
-          position: "bottom-left",
-        }
-      );
+      // toast.error(
+      //   "We couldn’t fetch your attendance records at this moment. Please try again shortly.",
+      //   {
+      //     title: "Attendance fetch failed",
+      //     durationMs: 5000,
+      //     position: "bottom-left",
+      //   }
+      // );
       setAttendanceData([]);
     } finally {
       setLoading(false);
+      setParentLoading?.(false);
     }
   };
 
   useEffect(() => {
     handleGetAttendanceData();
   }, [user?.employee_id, attendanceRefresh]);
-
   const filteredAndSortedData = useMemo(() => {
     let currentData = [...attendanceData];
 
@@ -487,7 +490,20 @@ const UserTable: React.FC<any> = ({
             </TableHeader>
 
             <TableBody>
-              {paged.length > 0 ? (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                  </TableRow>
+                ))
+              ) : paged.length > 0 ? (
                 paged.map((row: any) => {
                   const otMinutes = parseOtToMinutes(row.ot);
                   const hasOT = otMinutes > 0;
@@ -539,34 +555,28 @@ const UserTable: React.FC<any> = ({
                 })
               ) : (
                 <TableRow className="w-full">
-                  {loading ? (
-                    <TableCell colSpan={8} className="h-40 text-center">
-                      Loading…
-                    </TableCell>
-                  ) : (
-                    <TableCell
-                      colSpan={8}
-                      className="h-56 text-center align-middle"
-                    >
-                      <div className="mx-auto max-w-sm">
-                        <div className="mb-2 text-5xl">🗓️</div>
-                        <div className="text-lg font-semibold text-slate-900">
-                          No results in this view
-                        </div>
-                        <div className="mt-1 text-sm text-slate-600">
-                          Try widening your date range or clearing filters.
-                        </div>
-                        <div className="mt-4">
-                          <Button
-                            variant="outline"
-                            onClick={() => applyPreset("clear")}
-                          >
-                            Reset filters
-                          </Button>
-                        </div>
+                  <TableCell
+                    colSpan={8}
+                    className="h-56 text-center align-middle"
+                  >
+                    <div className="mx-auto max-w-sm">
+                      <div className="mb-2 text-5xl">🗓️</div>
+                      <div className="text-lg font-semibold text-slate-900">
+                        No results in this view
                       </div>
-                    </TableCell>
-                  )}
+                      <div className="mt-1 text-sm text-slate-600">
+                        Try widening your date range or clearing filters.
+                      </div>
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => applyPreset("clear")}
+                        >
+                          Reset filters
+                        </Button>
+                      </div>
+                    </div>
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>

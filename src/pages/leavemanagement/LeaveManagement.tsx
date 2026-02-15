@@ -71,6 +71,7 @@ const LeaveManagement: React.FC = () => {
     // Guards to prevent accidental double-submit / double-approval
     const [submittingLeave, setSubmittingLeave] = useState(false);
     const [processingActions, setProcessingActions] = useState<Record<string, boolean>>({}); // requestId -> true
+    const [isLoading, setIsLoading] = useState(true);
 
     const startAction = (requestId: string) =>
         setProcessingActions(prev => ({ ...prev, [requestId]: true }));
@@ -95,65 +96,75 @@ const LeaveManagement: React.FC = () => {
 
     // Initial Data Fetch
     React.useEffect(() => {
-        api.post('/api/leave/ensure-balances').catch(err => console.error("Failed to ensure balances", err));
+        const loadData = async () => {
+            setIsLoading(true);
+            try {
+                // Always ensure balances & fetch holidays
+                await api.post('/api/leave/ensure-balances').catch(err => console.error("Failed to ensure balances", err));
+                const holidaysRes = await api.get('/api/leave/holidays').catch(err => console.error("Failed to fetch holidays", err));
+                if (holidaysRes?.data) setHolidays(holidaysRes.data);
 
-        api.get('/api/leave/holidays')
-            .then(res => setHolidays(res.data))
-            .catch(err => console.error("Failed to fetch holidays", err));
+                // Admin data
+                if (user?.role === 'admin') {
+                    const [empRes, allBalancesRes, adminRequestsRes] = await Promise.all([
+                        api.get('/api/employee/getAllEmployee'),
+                        api.get('/api/leave/all-balances'),
+                        api.get('/api/leave?status=Submitted')
+                    ]);
 
-        if (user?.role === 'admin') {
-            api.get('/api/employee/getAllEmployee')
-                .then(res => setAllEmployees(res.data))
-                .catch(err => console.error("Failed to fetch employees", err));
+                    if (empRes?.data) setAllEmployees(empRes.data);
+                    if (allBalancesRes?.data) {
+                        setBalances(prev => {
+                            const existing = new Map(prev.map(b => [b.employeeId, b]));
+                            allBalancesRes.data.forEach((b: LeaveBalance) => existing.set(b.employeeId, b));
+                            return Array.from(existing.values());
+                        });
+                    }
+                    if (adminRequestsRes?.data) {
+                        const data = adminRequestsRes.data;
+                        setRequests(prev => {
+                            const existingIds = new Set(prev.map(r => r.id));
+                            const newReqs = data.filter((r: any) => !existingIds.has(r._id));
+                            return [...prev, ...newReqs.map((r: any) => ({ ...r, id: r._id }))];
+                        });
+                    }
+                } else if (user?.employee_id) {
+                    setAllEmployees([{
+                        id: user.employee_id,
+                        employee_id: user.employee_id,
+                        name: user.name,
+                        role: user.role,
+                        email: user.email
+                    } as any]);
+                }
 
-            api.get('/api/leave/all-balances')
-                .then(res => {
-                    setBalances(prev => {
-                        const existing = new Map(prev.map(b => [b.employeeId, b]));
-                        res.data.forEach((b: LeaveBalance) => existing.set(b.employeeId, b));
-                        return Array.from(existing.values());
-                    });
-                })
-                .catch(err => console.error("Failed to fetch all balances", err));
-        } else if (user?.employee_id) {
-            setAllEmployees([{
-                id: user.employee_id,
-                employee_id: user.employee_id,
-                name: user.name,
-                role: user.role,
-                email: user.email
-            } as any]);
-        }
-    }, [user]);
+                // User specific data (if userId is available)
+                if (userId) {
+                    const [userBalancesRes, userRequestsRes] = await Promise.all([
+                        api.get(`/api/leave/balances?employeeId=${encodeURIComponent(userId)}`),
+                        api.get(`/api/leave?employeeId=${encodeURIComponent(userId)}`)
+                    ]);
 
-    // User Data Fetch
-    React.useEffect(() => {
-        if (!userId) return;
+                    if (userBalancesRes?.data) {
+                        setBalances(prev => {
+                            const filtered = prev.filter(p => p.employeeId !== userId);
+                            return [...filtered, userBalancesRes.data];
+                        });
+                    }
+                    if (userRequestsRes?.data) {
+                        setRequests(userRequestsRes.data.map((r: any) => ({ ...r, id: r._id })));
+                    }
+                }
 
-        api.get(`/api/leave/balances?employeeId=${encodeURIComponent(userId)}`)
-            .then(res => setBalances(prev => {
-                const filtered = prev.filter(p => p.employeeId !== userId);
-                return [...filtered, res.data];
-            }))
-            .catch(err => console.error("Failed to fetch balances", err));
+            } catch (err) {
+                console.error("Failed to load initial data", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-        api.get(`/api/leave?employeeId=${encodeURIComponent(userId)}`)
-            .then(res => setRequests(res.data.map((r: any) => ({ ...r, id: r._id }))))
-            .catch(err => console.error("Failed to fetch requests", err));
-
-        if (user?.role === 'admin') {
-            api.get('/api/leave?status=Submitted')
-                .then(res => {
-                    const data = res.data;
-                    setRequests(prev => {
-                        const existingIds = new Set(prev.map(r => r.id));
-                        const newReqs = data.filter((r: any) => !existingIds.has(r._id));
-                        return [...prev, ...newReqs.map((r: any) => ({ ...r, id: r._id }))];
-                    });
-                })
-                .catch(err => console.error("Failed to fetch HR inbox", err));
-        }
-    }, [userId, user]);
+        if (user) loadData();
+    }, [user, userId]);
 
     const logAction = (entry: LeaveApprovalLog) => setLogs((prev) => [entry, ...prev]);
     const addNotification = (note: Omit<NotificationItem, 'id' | 'scheduledAt'>) =>
@@ -659,435 +670,481 @@ const LeaveManagement: React.FC = () => {
                 </div>
 
                 {page === 'Employee' ? (
-                    <>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
-                                <p className="text-sm text-slate-500">Manage your leaves and holidays</p>
-                            </div>
-                            <button
-                                className={`${btnBase} ${btnOutline}`}
-                                onClick={() => setShowHolidayPanel((prev) => !prev)}
-                            >
-                                {showHolidayPanel ? 'Hide holidays' : 'Show holidays'}
-                            </button>
-                        </div>
-
-                        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                            <div className="space-y-4">
-                                <section className="grid gap-4 sm:grid-cols-3">
-                                    {(['EL', 'CL', 'SL'] as LeaveType[]).map((type) => (
-                                        <article key={type} className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-2xl p-5 shadow">
-                                            <p className="text-xs uppercase">
-                                                {type === 'EL' ? 'Earned' : type === 'CL' ? 'Casual' : 'Sick'}
-                                            </p>
-                                            <p className="text-3xl font-semibold">{availableBalance(userId, type)} days</p>
-                                            <p className="text-xs mt-1">Available</p>
-                                        </article>
-                                    ))}
-                                </section>
-
-                                <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
-                                    <div>
-                                        {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Apply leave</p>
-                                        <h2 className="text-lg font-semibold">Submit a request</h2> */}
-                                        <h2 className="text-lg font-bold text-slate-900">Apply leave</h2>
-                                        <p className="text-sm text-slate-500">Submit a request</p>
-                                    </div>
-
-                                    <div className="grid gap-3 sm:grid-cols-3">
-                                        <select
-                                            value={leaveType}
-                                            onChange={(event) => setLeaveType(event.target.value as LeaveType)}
-                                            className="border rounded-2xl px-3 py-2"
-                                        >
-                                            <option value="EL">Earned</option>
-                                            <option value="CL">Casual</option>
-                                            <option value="SL">Sick</option>
-                                        </select>
-
-                                        <input
-                                            type="date"
-                                            value={fromDate}
-                                            onChange={(event) => setFromDate(event.target.value)}
-                                            className="border rounded-2xl px-3 py-2"
-                                        />
-
-                                        <input
-                                            type="date"
-                                            value={toDate}
-                                            onChange={(event) => setToDate(event.target.value)}
-                                            className="border rounded-2xl px-3 py-2"
-                                        />
-                                    </div>
-
-                                    <textarea
-                                        className="w-full border rounded-2xl px-3 py-2 min-h-[80px]"
-                                        placeholder="Reason"
-                                        value={reason}
-                                        onChange={(event) => setReason(event.target.value)}
-                                    />
-
-                                    <button
-                                        className="bg-slate-900 text-white px-5 py-2 rounded-2xl text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-                                        onClick={handleLeaveSubmit}
-                                        disabled={submittingLeave}
-                                    >
-                                        {submittingLeave ? 'Submitting...' : 'Submit leave'}
-                                    </button>
-                                </section>
+                    isLoading ? (
+                        <div className="space-y-6 animate-pulse">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="h-6 w-32 bg-slate-200 rounded mb-2"></div>
+                                    <div className="h-4 w-48 bg-slate-200 rounded"></div>
+                                </div>
+                                <div className="h-8 w-24 bg-slate-200 rounded-full"></div>
                             </div>
 
-                            <aside className="space-y-3">
-                                {showHolidayPanel ? (
-                                    <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3 sticky top-6">
-                                        <div className="flex items-center justify-between">
-                                            {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p> */}
-                                            <h2 className="text-lg font-bold text-slate-900">Holiday calendar</h2>
-                                            {/* <p className="text-sm text-slate-500">Manage your leaves and holidays</p> */}
-                                            <span className="text-xs text-slate-400">{holidayKeys.length} active</span>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {holidays.filter((holiday) => holiday.isActive).map((holiday) => (
-                                                <article
-                                                    key={holiday.id}
-                                                    className="flex justify-between items-center text-sm border border-slate-100 rounded-2xl px-4 py-3"
-                                                >
-                                                    <div>
-                                                        <p className="font-semibold">{holiday.title}</p>
-                                                        <p className="text-xs text-slate-500">{holiday.date}</p>
-                                                    </div>
-                                                    <span className="text-xs uppercase text-slate-400">{holiday.region ?? 'All'}</span>
-                                                </article>
-                                            ))}
-                                            {!holidays.filter((holiday) => holiday.isActive).length && (
-                                                <p className="text-sm text-slate-500">No active holidays scheduled yet.</p>
-                                            )}
-                                        </div>
+                            <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                                <div className="space-y-4">
+                                    <section className="grid gap-4 sm:grid-cols-3">
+                                        {[1, 2, 3].map((i) => (
+                                            <div key={i} className="h-32 bg-slate-200 rounded-2xl"></div>
+                                        ))}
                                     </section>
-                                ) : (
-                                    <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3 sticky top-6">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-xs uppercase text-slate-500">Your focus</p>
-                                            <span className="text-xs text-slate-400">{filtered.length} requests</span>
-                                        </div>
-                                        <div className="space-y-3 text-sm">
-                                            <div className={`rounded-2xl px-3 py-2 ${statusPalette.warning}`}>
-                                                <p className="text-[10px] uppercase">Pending</p>
-                                                <p className="font-semibold text-lg">
-                                                    {filtered.filter((req) => req.status === 'Submitted').length}
+                                    <div className="h-96 bg-slate-200 rounded-2xl"></div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="h-64 bg-slate-200 rounded-2xl"></div>
+                                </div>
+                            </div>
+                            <div className="h-48 bg-slate-200 rounded-2xl"></div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
+                                    <p className="text-sm text-slate-500">Manage your leaves and holidays</p>
+                                </div>
+                                <button
+                                    className={`${btnBase} ${btnOutline}`}
+                                    onClick={() => setShowHolidayPanel((prev) => !prev)}
+                                >
+                                    {showHolidayPanel ? 'Hide holidays' : 'Show holidays'}
+                                </button>
+                            </div>
+
+                            <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                                <div className="space-y-4">
+                                    <section className="grid gap-4 sm:grid-cols-3">
+                                        {(['EL', 'CL', 'SL'] as LeaveType[]).map((type) => (
+                                            <article key={type} className="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-xl p-5 shadow">
+                                                <p className="text-xs uppercase">
+                                                    {type === 'EL' ? 'Earned' : type === 'CL' ? 'Casual' : 'Sick'}
                                                 </p>
+                                                <p className="text-3xl font-semibold">{availableBalance(userId, type)} days</p>
+                                                <p className="text-xs mt-1">Available</p>
+                                            </article>
+                                        ))}
+                                    </section>
+
+                                    <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
+                                        <div>
+                                            {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Apply leave</p>
+                                        <h2 className="text-lg font-semibold">Submit a request</h2> */}
+                                            <h2 className="text-lg font-bold text-slate-900">Apply leave</h2>
+                                            <p className="text-sm text-slate-500">Submit a request</p>
+                                        </div>
+
+                                        <div className="grid gap-3 sm:grid-cols-3">
+                                            <select
+                                                value={leaveType}
+                                                onChange={(event) => setLeaveType(event.target.value as LeaveType)}
+                                                className="border rounded-2xl px-3 py-2"
+                                            >
+                                                <option value="EL">Earned</option>
+                                                <option value="CL">Casual</option>
+                                                <option value="SL">Sick</option>
+                                            </select>
+
+                                            <input
+                                                type="date"
+                                                value={fromDate}
+                                                onChange={(event) => setFromDate(event.target.value)}
+                                                className="border rounded-2xl px-3 py-2"
+                                            />
+
+                                            <input
+                                                type="date"
+                                                value={toDate}
+                                                onChange={(event) => setToDate(event.target.value)}
+                                                className="border rounded-2xl px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <textarea
+                                            className="w-full border rounded-2xl px-3 py-2 min-h-[80px]"
+                                            placeholder="Reason"
+                                            value={reason}
+                                            onChange={(event) => setReason(event.target.value)}
+                                        />
+
+                                        <button
+                                            className="bg-slate-900 text-white px-5 py-2 rounded-2xl text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                                            onClick={handleLeaveSubmit}
+                                            disabled={submittingLeave}
+                                        >
+                                            {submittingLeave ? 'Submitting...' : 'Submit leave'}
+                                        </button>
+                                    </section>
+                                </div>
+
+                                <aside className="space-y-3">
+                                    {showHolidayPanel ? (
+                                        <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3 sticky top-6">
+                                            <div className="flex items-center justify-between">
+                                                {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p> */}
+                                                <h2 className="text-lg font-bold text-slate-900">Holiday calendar</h2>
+                                                {/* <p className="text-sm text-slate-500">Manage your leaves and holidays</p> */}
+                                                <span className="text-xs text-slate-400">{holidayKeys.length} active</span>
                                             </div>
-                                            <div className={`rounded-2xl px-3 py-2 ${statusPalette.success}`}>
-                                                <p className="text-[10px] uppercase">Approved days</p>
-                                                <p className="font-semibold text-lg">{stats.EL + stats.CL + stats.SL} days</p>
-                                            </div>
-                                            <div className={`rounded-2xl px-3 py-2 ${statusPalette.info}`}>
-                                                <p className="text-[10px] uppercase">Upcoming</p>
-                                                {filtered
-                                                    .filter((req) => req.status === 'HR_Approved')
-                                                    .slice(0, 2)
-                                                    .map((req) => (
-                                                        <div key={req.id} className="flex items-center justify-between">
-                                                            <p>{req.leaveType}</p>
-                                                            <span className="text-xs text-slate-400">
-                                                                {req.startDate} → {req.endDate}
-                                                            </span>
+                                            <div className="space-y-3">
+                                                {holidays.filter((holiday) => holiday.isActive).map((holiday) => (
+                                                    <article
+                                                        key={holiday.id}
+                                                        className="flex justify-between items-center text-sm border border-slate-100 rounded-2xl px-4 py-3"
+                                                    >
+                                                        <div>
+                                                            <p className="font-semibold">{holiday.title}</p>
+                                                            <p className="text-xs text-slate-500">{holiday.date}</p>
                                                         </div>
-                                                    ))}
-                                                {!filtered.some((req) => req.status === 'HR_Approved') && (
-                                                    <p className="text-xs text-slate-500">No upcoming leaves</p>
+                                                        <span className="text-xs uppercase text-slate-400">{holiday.region ?? 'All'}</span>
+                                                    </article>
+                                                ))}
+                                                {!holidays.filter((holiday) => holiday.isActive).length && (
+                                                    <p className="text-sm text-slate-500">No active holidays scheduled yet.</p>
                                                 )}
                                             </div>
-                                        </div>
-                                    </section>
-                                )}
-                            </aside>
-                        </div>
-
-                        <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
-                            <div className="flex items-center justify-between">
-                                {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave history</p> */}
-                                <h2 className="text-lg font-bold text-slate-900">Leave history</h2>
-                                <select
-                                    value={filterStatus}
-                                    onChange={(event) => setFilterStatus(event.target.value as LeaveStatus | '')}
-                                    className="border rounded-full px-3 py-1 text-xs"
-                                >
-                                    <option value="">All statuses</option>
-                                    {(['Submitted', 'HR_Approved', 'HR_Rejected', 'Cancelled', 'AutoProcessed'] as LeaveStatus[]).map((status) => (
-                                        <option key={status} value={status}>
-                                            {status}
-                                        </option>
-                                    ))}
-                                </select>
+                                        </section>
+                                    ) : (
+                                        <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3 sticky top-6">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-xs uppercase text-slate-500">Your focus</p>
+                                                <span className="text-xs text-slate-400">{filtered.length} requests</span>
+                                            </div>
+                                            <div className="space-y-3 text-sm">
+                                                <div className={`rounded-2xl px-3 py-2 ${statusPalette.warning}`}>
+                                                    <p className="text-[10px] uppercase">Pending</p>
+                                                    <p className="font-semibold text-lg">
+                                                        {filtered.filter((req) => req.status === 'Submitted').length}
+                                                    </p>
+                                                </div>
+                                                <div className={`rounded-2xl px-3 py-2 ${statusPalette.success}`}>
+                                                    <p className="text-[10px] uppercase">Approved days</p>
+                                                    <p className="font-semibold text-lg">{stats.EL + stats.CL + stats.SL} days</p>
+                                                </div>
+                                                <div className={`rounded-2xl px-3 py-2 ${statusPalette.info}`}>
+                                                    <p className="text-[10px] uppercase">Upcoming</p>
+                                                    {filtered
+                                                        .filter((req) => req.status === 'HR_Approved')
+                                                        .slice(0, 2)
+                                                        .map((req) => (
+                                                            <div key={req.id} className="flex items-center justify-between">
+                                                                <p>{req.leaveType}</p>
+                                                                <span className="text-xs text-slate-400">
+                                                                    {req.startDate} → {req.endDate}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    {!filtered.some((req) => req.status === 'HR_Approved') && (
+                                                        <p className="text-xs text-slate-500">No upcoming leaves</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </section>
+                                    )}
+                                </aside>
                             </div>
 
-                            <div className="space-y-3">
-                                {filtered.length ? (
-                                    filtered.map((request) => (
-                                        <article key={request.id} className="border border-slate-100 rounded-2xl p-4">
-                                            <div className="flex justify-between text-sm">
-                                                <div>
-                                                    <p className="font-semibold">{request.leaveType}</p>
+                            <section className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave history</p> */}
+                                    <h2 className="text-lg font-bold text-slate-900">Leave history</h2>
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(event) => setFilterStatus(event.target.value as LeaveStatus | '')}
+                                        className="border rounded-full px-3 py-1 text-xs"
+                                    >
+                                        <option value="">All statuses</option>
+                                        {(['Submitted', 'HR_Approved', 'HR_Rejected', 'Cancelled', 'AutoProcessed'] as LeaveStatus[]).map((status) => (
+                                            <option key={status} value={status}>
+                                                {status}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {filtered.length ? (
+                                        filtered.map((request) => (
+                                            <article key={request.id} className="border border-slate-100 rounded-2xl p-4">
+                                                <div className="flex justify-between text-sm">
+                                                    <div>
+                                                        <p className="font-semibold">{request.leaveType}</p>
+                                                        <p className="text-xs text-slate-500">
+                                                            {request.startDate} → {request.endDate}
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-xs uppercase">{request.status}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-400 mt-2">{request.reason || 'No reason provided'}</p>
+                                            </article>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-slate-500">No requests yet.</p>
+                                    )}
+                                </div>
+                            </section>
+                        </>
+                    )
+                ) : (
+                    isLoading ? (
+                        <div className="space-y-6 animate-pulse">
+                            <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="h-6 w-32 bg-slate-200 rounded"></div>
+                                    <div className="h-4 w-24 bg-slate-200 rounded"></div>
+                                </div>
+                                <div className="space-y-3">
+                                    {[1, 2].map((i) => (
+                                        <div key={i} className="h-24 bg-slate-200 rounded-2xl"></div>
+                                    ))}
+                                </div>
+                            </section>
+                            <div className="grid gap-4 lg:grid-cols-2">
+                                <div className="h-64 bg-slate-200 rounded-2xl"></div>
+                                <div className="h-64 bg-slate-200 rounded-2xl"></div>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">HR inbox</p> */}
+                                    <h2 className="text-lg font-bold text-slate-900">HR inbox</h2>
+                                    <p className="text-sm text-slate-500">{hrPending.length} pending</p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {hrPending.length ? (
+                                        hrPending.map((request) => {
+                                            const busy = !!processingActions[request.id];
+                                            const emp = allEmployees.find((e) => e.employee_id == request.employeeId);
+                                            const empName = emp ? `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() : request.employeeId;
+
+                                            return (
+                                                <article
+                                                    key={request.id}
+                                                    className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-gradient-to-tr from-white via-slate-50 to-white shadow-sm"
+                                                >
+                                                    <div className="flex justify-between gap-4">
+                                                        <p className="font-semibold">
+                                                            {empName} • {request.leaveType}
+                                                        </p>
+                                                        <span className="text-xs uppercase text-slate-500">{request.totalDays}d</span>
+                                                    </div>
+
                                                     <p className="text-xs text-slate-500">
                                                         {request.startDate} → {request.endDate}
                                                     </p>
-                                                </div>
-                                                <span className="text-xs uppercase">{request.status}</span>
-                                            </div>
-                                            <p className="text-xs text-slate-400 mt-2">{request.reason || 'No reason provided'}</p>
-                                        </article>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-slate-500">No requests yet.</p>
-                                )}
-                            </div>
-                        </section>
-                    </>
-                ) : (
-                    <>
-                        <section className="bg-white rounded-2xl border border-slate-200 shadow p-6 space-y-4">
-                            <div className="flex items-center justify-between">
-                                {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">HR inbox</p> */}
-                                <h2 className="text-lg font-bold text-slate-900">HR inbox</h2>
-                                <p className="text-sm text-slate-500">{hrPending.length} pending</p>
-                            </div>
 
-                            <div className="space-y-3">
-                                {hrPending.length ? (
-                                    hrPending.map((request) => {
-                                        const busy = !!processingActions[request.id];
-                                        const emp = allEmployees.find((e) => e.employee_id == request.employeeId);
-                                        const empName = emp ? `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() : request.employeeId;
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <button
+                                                            className={`${btnBase} ${btnApprove}`}
+                                                            onClick={() => handleHrDecision(request.id, true)}
+                                                            disabled={busy}
+                                                        >
+                                                            {busy ? 'Processing...' : 'Approve'}
+                                                        </button>
 
-                                        return (
-                                            <article
-                                                key={request.id}
-                                                className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-gradient-to-tr from-white via-slate-50 to-white shadow-sm"
-                                            >
-                                                <div className="flex justify-between gap-4">
-                                                    <p className="font-semibold">
-                                                        {empName} • {request.leaveType}
-                                                    </p>
-                                                    <span className="text-xs uppercase text-slate-500">{request.totalDays}d</span>
-                                                </div>
+                                                        <button
+                                                            className={`${btnBase} ${btnReject}`}
+                                                            onClick={() => handleHrDecision(request.id, false)}
+                                                            disabled={busy}
+                                                        >
+                                                            {busy ? 'Processing...' : 'Reject'}
+                                                        </button>
 
-                                                <p className="text-xs text-slate-500">
-                                                    {request.startDate} → {request.endDate}
-                                                </p>
-
-                                                <div className="flex flex-wrap gap-2">
-                                                    <button
-                                                        className={`${btnBase} ${btnApprove}`}
-                                                        onClick={() => handleHrDecision(request.id, true)}
-                                                        disabled={busy}
-                                                    >
-                                                        {busy ? 'Processing...' : 'Approve'}
-                                                    </button>
-
-                                                    <button
-                                                        className={`${btnBase} ${btnReject}`}
-                                                        onClick={() => handleHrDecision(request.id, false)}
-                                                        disabled={busy}
-                                                    >
-                                                        {busy ? 'Processing...' : 'Reject'}
-                                                    </button>
-
-                                                    <button
-                                                        className={`${btnBase} ${btnOutline}`}
-                                                        onClick={() => handleCancel(request.id)}
-                                                        disabled={busy}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </article>
-                                        );
-                                    })
-                                ) : (
-                                    <p className="text-sm text-slate-500">No pending leaves.</p>
-                                )}
-                            </div>
-                        </section>
-
-                        <section className="grid gap-4 lg:grid-cols-2">
-                            <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-4">
-                                <div className="flex items-center justify-between gap-3">
-                                    {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p> */}
-                                    <h2 className="text-lg font-bold text-slate-900">Holiday calendar</h2>
-                                    <button
-                                        className={`${btnBase} ${btnOutline}`}
-                                        onClick={() => setShowHolidayEditor((prev) => !prev)}
-                                    >
-                                        {showHolidayEditor ? 'Close' : 'New holiday'}
-                                    </button>
+                                                        <button
+                                                            className={`${btnBase} ${btnOutline}`}
+                                                            onClick={() => handleCancel(request.id)}
+                                                            disabled={busy}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </article>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-sm text-slate-500">No pending leaves.</p>
+                                    )}
                                 </div>
+                            </section>
 
-                                <div className="space-y-3 text-sm">
-                                    {holidays.map((holiday) => (
-                                        <div key={holiday.id} className="flex justify-between items-center rounded-2xl border border-dashed border-slate-100 px-4 py-3">
-                                            <div>
-                                                <p className="font-semibold">{holiday.title}</p>
-                                                <p className="text-xs text-slate-500">{holiday.date}</p>
-                                            </div>
-                                            <label className="flex items-center gap-2 text-xs">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={holiday.isActive}
-                                                    onChange={() =>
-                                                        setHolidays((prev) =>
-                                                            prev.map((item) => (item.id === holiday.id ? { ...item, isActive: !item.isActive } : item)),
-                                                        )
-                                                    }
-                                                />
-                                                {holiday.isActive ? 'Active' : 'Disabled'}
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {showHolidayEditor && (
-                                    <div className="space-y-2 text-sm">
-                                        <input
-                                            type="text"
-                                            className="w-full border rounded-2xl px-3 py-2"
-                                            placeholder="Holiday name"
-                                            value={holidayForm.title}
-                                            onChange={(event) => setHolidayForm((prev) => ({ ...prev, title: event.target.value }))}
-                                        />
-                                        <input
-                                            type="date"
-                                            className="w-full border rounded-2xl px-3 py-2"
-                                            value={holidayForm.date}
-                                            onChange={(event) => setHolidayForm((prev) => ({ ...prev, date: event.target.value }))}
-                                        />
+                            <section className="grid gap-4 lg:grid-cols-2">
+                                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Holiday calendar</p> */}
+                                        <h2 className="text-lg font-bold text-slate-900">Holiday calendar</h2>
                                         <button
-                                            className="bg-slate-900 text-white rounded-2xl px-4 py-2 text-xs font-semibold"
-                                            onClick={handleHolidayCreate}
+                                            className={`${btnBase} ${btnOutline}`}
+                                            onClick={() => setShowHolidayEditor((prev) => !prev)}
                                         >
-                                            Save holiday
+                                            {showHolidayEditor ? 'Close' : 'New holiday'}
                                         </button>
                                     </div>
-                                )}
-                            </article>
 
-                            <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-4">
-                                <div className="flex items-center justify-between gap-3">
-                                    {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave policy</p> */}
-                                    <h2 className="text-lg font-bold text-slate-900">Leave policy</h2>
-                                    <button
-                                        className={`${btnBase} ${btnOutline}`}
-                                        onClick={() => setShowPolicyEditor((prev) => !prev)}
-                                    >
-                                        {showPolicyEditor ? 'Close' : 'Edit policy'}
-                                    </button>
-                                </div>
-
-                                <div className="space-y-3 text-sm">
-                                    <div className="flex justify-between bg-emerald-50 rounded-2xl px-4 py-3">
-                                        <p className="font-semibold">Earned</p>
-                                        <span className="text-xs text-emerald-700">EL {leavePolicy.EL} days</span>
-                                    </div>
-                                    <div className="flex justify-between bg-amber-50 rounded-2xl px-4 py-3">
-                                        <p className="font-semibold">Casual</p>
-                                        <span className="text-xs text-amber-700">CL {leavePolicy.CL} days</span>
-                                    </div>
-                                    <div className="flex justify-between bg-rose-50 rounded-2xl px-4 py-3">
-                                        <p className="font-semibold">Sick</p>
-                                        <span className="text-xs text-rose-700">SL {leavePolicy.SL} days</span>
-                                    </div>
-                                </div>
-
-                                {showPolicyEditor && (
                                     <div className="space-y-3 text-sm">
-                                        <div className="grid gap-3 sm:grid-cols-3">
-                                            <input
-                                                type="number"
-                                                className="w-full border rounded-2xl px-3 py-2"
-                                                value={policyForm.EL}
-                                                onChange={(event) => setPolicyForm((prev) => ({ ...prev, EL: Number(event.target.value) }))}
-                                            />
-                                            <input
-                                                type="number"
-                                                className="w-full border rounded-2xl px-3 py-2"
-                                                value={policyForm.CL}
-                                                onChange={(event) => setPolicyForm((prev) => ({ ...prev, CL: Number(event.target.value) }))}
-                                            />
-                                            <input
-                                                type="number"
-                                                className="w-full border rounded-2xl px-3 py-2"
-                                                value={policyForm.SL}
-                                                onChange={(event) => setPolicyForm((prev) => ({ ...prev, SL: Number(event.target.value) }))}
-                                            />
-                                        </div>
+                                        {holidays.map((holiday) => (
+                                            <div key={holiday.id} className="flex justify-between items-center rounded-2xl border border-dashed border-slate-100 px-4 py-3">
+                                                <div>
+                                                    <p className="font-semibold">{holiday.title}</p>
+                                                    <p className="text-xs text-slate-500">{holiday.date}</p>
+                                                </div>
+                                                <label className="flex items-center gap-2 text-xs">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={holiday.isActive}
+                                                        onChange={() =>
+                                                            setHolidays((prev) =>
+                                                                prev.map((item) => (item.id === holiday.id ? { ...item, isActive: !item.isActive } : item)),
+                                                            )
+                                                        }
+                                                    />
+                                                    {holiday.isActive ? 'Active' : 'Disabled'}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
 
+                                    {showHolidayEditor && (
+                                        <div className="space-y-2 text-sm">
+                                            <input
+                                                type="text"
+                                                className="w-full border rounded-2xl px-3 py-2"
+                                                placeholder="Holiday name"
+                                                value={holidayForm.title}
+                                                onChange={(event) => setHolidayForm((prev) => ({ ...prev, title: event.target.value }))}
+                                            />
+                                            <input
+                                                type="date"
+                                                className="w-full border rounded-2xl px-3 py-2"
+                                                value={holidayForm.date}
+                                                onChange={(event) => setHolidayForm((prev) => ({ ...prev, date: event.target.value }))}
+                                            />
+                                            <button
+                                                className="bg-slate-900 text-white rounded-2xl px-4 py-2 text-xs font-semibold"
+                                                onClick={handleHolidayCreate}
+                                            >
+                                                Save holiday
+                                            </button>
+                                        </div>
+                                    )}
+                                </article>
+
+                                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        {/* <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Leave policy</p> */}
+                                        <h2 className="text-lg font-bold text-slate-900">Leave policy</h2>
                                         <button
-                                            className="bg-slate-900 text-white rounded-2xl px-4 py-2 text-xs font-semibold"
-                                            onClick={applyPolicyChanges}
+                                            className={`${btnBase} ${btnOutline}`}
+                                            onClick={() => setShowPolicyEditor((prev) => !prev)}
                                         >
-                                            Save policy
+                                            {showPolicyEditor ? 'Close' : 'Edit policy'}
                                         </button>
                                     </div>
-                                )}
-                            </article>
-                        </section>
 
-                        <section className="grid gap-4 lg:grid-cols-2">
-                            <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-xs uppercase text-slate-500">Analytics</p>
-                                    <p className="text-xs text-slate-400">Month vs year per employee</p>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="text-left text-[10px] text-slate-400">
-                                            <tr>
-                                                <th className="pb-2">Employee</th>
-                                                <th className="pb-2 text-center">Month EL</th>
-                                                <th className="pb-2 text-center">Month CL</th>
-                                                <th className="pb-2 text-center">Month SL</th>
-                                                <th className="pb-2 text-center">Balance EL</th>
-                                                <th className="pb-2 text-center">Balance CL</th>
-                                                <th className="pb-2 text-center">Balance SL</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="text-slate-600">
-                                            {analyticsByEmployeeCorrected.map((row) => (
-                                                <tr key={row.employee.id ?? row.employee.employee_id} className="border-t border-slate-100">
-                                                    <td className="py-3 font-semibold">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
-                                                    <td className="py-3 text-center">{row.monthly.EL}</td>
-                                                    <td className="py-3 text-center">{row.monthly.CL}</td>
-                                                    <td className="py-3 text-center">{row.monthly.SL}</td>
-                                                    <td className="py-3 text-center">{row.yearly.EL}</td>
-                                                    <td className="py-3 text-center">{row.yearly.CL}</td>
-                                                    <td className="py-3 text-center">{row.yearly.SL}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </article>
-
-                            <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
-                                <p className="text-xs uppercase text-slate-500">Audit log</p>
-                                <div className="space-y-2 text-sm">
-                                    {logs.slice(0, 4).map((log) => (
-                                        <div key={log.id} className="flex justify-between">
-                                            <div>
-                                                <p className="font-semibold">{log.action}</p>
-                                                <p className="text-xs text-slate-500 truncate">{log.remarks}</p>
-                                            </div>
-                                            <span className="text-xs text-slate-400">{format(new Date(log.actionAt), 'HH:mm')}</span>
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex justify-between bg-emerald-50 rounded-2xl px-4 py-3">
+                                            <p className="font-semibold">Earned</p>
+                                            <span className="text-xs text-emerald-700">EL {leavePolicy.EL} days</span>
                                         </div>
-                                    ))}
-                                    {!logs.length && <p className="text-xs text-slate-500">No logs yet</p>}
-                                </div>
-                            </article>
-                        </section>
-                    </>
-                )}
+                                        <div className="flex justify-between bg-amber-50 rounded-2xl px-4 py-3">
+                                            <p className="font-semibold">Casual</p>
+                                            <span className="text-xs text-amber-700">CL {leavePolicy.CL} days</span>
+                                        </div>
+                                        <div className="flex justify-between bg-rose-50 rounded-2xl px-4 py-3">
+                                            <p className="font-semibold">Sick</p>
+                                            <span className="text-xs text-rose-700">SL {leavePolicy.SL} days</span>
+                                        </div>
+                                    </div>
+
+                                    {showPolicyEditor && (
+                                        <div className="space-y-3 text-sm">
+                                            <div className="grid gap-3 sm:grid-cols-3">
+                                                <input
+                                                    type="number"
+                                                    className="w-full border rounded-2xl px-3 py-2"
+                                                    value={policyForm.EL}
+                                                    onChange={(event) => setPolicyForm((prev) => ({ ...prev, EL: Number(event.target.value) }))}
+                                                />
+                                                <input
+                                                    type="number"
+                                                    className="w-full border rounded-2xl px-3 py-2"
+                                                    value={policyForm.CL}
+                                                    onChange={(event) => setPolicyForm((prev) => ({ ...prev, CL: Number(event.target.value) }))}
+                                                />
+                                                <input
+                                                    type="number"
+                                                    className="w-full border rounded-2xl px-3 py-2"
+                                                    value={policyForm.SL}
+                                                    onChange={(event) => setPolicyForm((prev) => ({ ...prev, SL: Number(event.target.value) }))}
+                                                />
+                                            </div>
+
+                                            <button
+                                                className="bg-slate-900 text-white rounded-2xl px-4 py-2 text-xs font-semibold"
+                                                onClick={applyPolicyChanges}
+                                            >
+                                                Save policy
+                                            </button>
+                                        </div>
+                                    )}
+                                </article>
+                            </section>
+
+                            <section className="grid gap-4 lg:grid-cols-2">
+                                {/* <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs uppercase text-slate-500">Analytics</p>
+                                        <p className="text-xs text-slate-400">Month vs year per employee</p>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="text-left text-[10px] text-slate-400">
+                                                <tr>
+                                                    <th className="pb-2">Employee</th>
+                                                    <th className="pb-2 text-center">Month EL</th>
+                                                    <th className="pb-2 text-center">Month CL</th>
+                                                    <th className="pb-2 text-center">Month SL</th>
+                                                    <th className="pb-2 text-center">Balance EL</th>
+                                                    <th className="pb-2 text-center">Balance CL</th>
+                                                    <th className="pb-2 text-center">Balance SL</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="text-slate-600">
+                                                {analyticsByEmployeeCorrected.map((row) => (
+                                                    <tr key={row.employee.id ?? row.employee.employee_id} className="border-t border-slate-100">
+                                                        <td className="py-3 font-semibold">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
+                                                        <td className="py-3 text-center">{row.monthly.EL}</td>
+                                                        <td className="py-3 text-center">{row.monthly.CL}</td>
+                                                        <td className="py-3 text-center">{row.monthly.SL}</td>
+                                                        <td className="py-3 text-center">{row.yearly.EL}</td>
+                                                        <td className="py-3 text-center">{row.yearly.CL}</td>
+                                                        <td className="py-3 text-center">{row.yearly.SL}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </article> */}
+
+                                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                                    <p className="text-xs uppercase text-slate-500">Audit log</p>
+                                    <div className="space-y-2 text-sm">
+                                        {logs.slice(0, 4).map((log) => (
+                                            <div key={log.id} className="flex justify-between">
+                                                <div>
+                                                    <p className="font-semibold">{log.action}</p>
+                                                    <p className="text-xs text-slate-500 truncate">{log.remarks}</p>
+                                                </div>
+                                                <span className="text-xs text-slate-400">{format(new Date(log.actionAt), 'HH:mm')}</span>
+                                            </div>
+                                        ))}
+                                        {!logs.length && <p className="text-xs text-slate-500">No logs yet</p>}
+                                    </div>
+                                </article>
+                            </section>
+                        </>
+                    ))}
             </div>
         </div>
     );

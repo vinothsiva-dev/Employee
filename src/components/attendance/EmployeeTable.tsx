@@ -224,10 +224,10 @@ const EmployeeTable: React.FC<Props> = ({
                 c.label == "On Going"
                   ? "#ffa5007d"
                   : c.label == "Completed"
-                  ? "#10f05d7d"
-                  : c.label == "Hold"
-                  ? "#00ffe57d"
-                  : "#a610f07d",
+                    ? "#10f05d7d"
+                    : c.label == "Hold"
+                      ? "#00ffe57d"
+                      : "#a610f07d",
               boxShadow:
                 "0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06)",
             }}
@@ -331,10 +331,10 @@ const EmployeeTable: React.FC<Props> = ({
 
       const loaderToastId = isFirstPage
         ? toast.info("Fetching attendance…", {
-            durationMs: 0,
-            position: "bottom-left",
-            dismissible: true,
-          })
+          durationMs: 0,
+          position: "bottom-left",
+          dismissible: true,
+        })
         : null;
 
       try {

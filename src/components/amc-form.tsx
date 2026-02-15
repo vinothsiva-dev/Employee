@@ -36,6 +36,8 @@ const formSchema = z.object({
 });
 
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 // --- AmcFormProps (No Change) ---
 interface AmcFormProps {
     initialData?: Partial<AmcFormValues>;
@@ -43,6 +45,7 @@ interface AmcFormProps {
     isSubmitting: boolean;
     dealerOptions: EntityOption[];
     customerOptions: EntityOption[];
+    isLoading?: boolean;
 }
 
 
@@ -51,7 +54,8 @@ export function AmcForm({
     onSubmit,
     isSubmitting,
     dealerOptions,
-    customerOptions
+    customerOptions,
+    isLoading = false
 }: AmcFormProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -84,6 +88,44 @@ export function AmcForm({
             newCustomerName: '',
         });
     };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-4 pt-4 p-4 border-t-[2px]">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="flex space-x-4">
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-24 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+            </div>
+        );
+    }
 
     return (
         <Form {...form}>

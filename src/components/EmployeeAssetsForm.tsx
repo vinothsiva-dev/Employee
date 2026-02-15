@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Skeleton } from "@/components/ui/skeleton";
+
 import { Button } from '@/components/ui/button';
 import { api } from "@/lib/axios";
 import { FC } from "react";
@@ -1010,6 +1012,12 @@ export default function EmployeeAssetsForm() {
     return (
         <>
             <div className="p-4">
+                <style>{`
+                  .custom-scrollbar::-webkit-scrollbar { width: 12px; }
+                  .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 6px; }
+                  .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #00bcd4; border-radius: 6px; border: 3px solid #f1f1f1; }
+                  .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #00bcd4 #f1f1f1; }
+                `}</style>
 
                 {/* Add New Button (Right aligned) */}
                 <div className="flex justify-end mb-4">
@@ -1099,348 +1107,345 @@ export default function EmployeeAssetsForm() {
 
 
 
-                {assets.length == 0 && (
+                {assets.length == 0 && !loading && (
                     <div className="flex items-center justify-center h-[70vh] text-gray-500 text-lg font-bold">
                         No Data Found
                     </div>
                 )}
 
 
-                {viewMode === "grid" && assets.length > 0 &&
+                {viewMode === "grid" && (assets.length > 0 || loading) && (
                     <div className=" max-h-[65vh] overflow-auto  rounded-md custom-scrollbar" style={{ marginRight: '8rem' }} onScroll={handleScroll}>
                         <div className="mt-4 mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {assets.map((item: any) => (
-                                <AssetCard
-                                    key={item._id}
-                                    data={item}
-                                    onEdit={handleEdit}
-                                    onHistory={handleViewHistory}
-                                    onDelete={handleDelete}
-                                />
-                            ))}</div>
-                        <style >{`
-  /* Chrome, Edge, Safari */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 12px; /* width of the scrollbar */
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f1f1; /* track color */
-    border-radius: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #00bcd4; /* thumb color */
-    border-radius: 6px;
-    border: 3px solid #f1f1f1; /* optional padding around thumb */
-  }
-
-  /* Firefox */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #00bcd4 #f1f1f1;
-  }
-`}</style>
-                    </div>}
-                {viewMode === "table" && assets.length > 0 && <div>
-                    {assets && assets?.length > 0 && (
+                            {loading && assets.length === 0 ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="border border-slate-200 rounded-2xl p-5 space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <Skeleton className="w-10 h-10 rounded-full" />
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-4 w-24" />
+                                                <Skeleton className="h-3 w-16" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 pt-2">
+                                            <Skeleton className="h-3 w-full" />
+                                            <Skeleton className="h-3 w-full" />
+                                            <Skeleton className="h-3 w-3/4" />
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                assets.map((item: any) => (
+                                    <AssetCard
+                                        key={item._id}
+                                        data={item}
+                                        onEdit={handleEdit}
+                                        onHistory={handleViewHistory}
+                                        onDelete={handleDelete}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
+                {viewMode === "table" && (assets.length > 0 || loading) && (
+                    <div>
                         <div className="grid " style={{ marginRight: '8rem' }}>
-
                             <div className="max-h-[65vh] overflow-auto border rounded-md custom-scrollbar" onScroll={handleScroll}>
-                                <AssetHistoryModalList
-                                    data={assets}
-                                    onEdit={handleEdit}
-                                    onHistory={handleViewHistory}
-                                    onDelete={handleDelete}
-                                />
+                                {loading && assets.length === 0 ? (
+                                    <div className="p-4 space-y-4">
+                                        <div className="grid grid-cols-[40px_150px_repeat(22,150px)_50px] gap-2">
+                                            {Array.from({ length: 25 }).map((_, i) => (
+                                                <Skeleton key={i} className="h-8 w-full" />
+                                            ))}
+                                        </div>
+                                        {Array.from({ length: 10 }).map((_, i) => (
+                                            <div key={i} className="grid grid-cols-[40px_150px_repeat(22,150px)_50px] gap-2 border-b pb-2">
+                                                <Skeleton className="h-10 w-full" />
+                                                <Skeleton className="h-10 w-full" />
+                                                {Array.from({ length: 22 }).map((_, j) => (
+                                                    <Skeleton key={j} className="h-10 w-full" />
+                                                ))}
+                                                <Skeleton className="h-10 w-full" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <AssetHistoryModalList
+                                        data={assets}
+                                        onEdit={handleEdit}
+                                        onHistory={handleViewHistory}
+                                        onDelete={handleDelete}
+                                    />
+                                )}
                                 {loading && <p className="text-center py-2">Loading...</p>}
                             </div>
-                            <style >{`
-  /* Chrome, Edge, Safari */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 12px; /* width of the scrollbar */
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f1f1; /* track color */
-    border-radius: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #00bcd4; /* thumb color */
-    border-radius: 6px;
-    border: 3px solid #f1f1f1; /* optional padding around thumb */
-  }
-
-  /* Firefox */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #00bcd4 #f1f1f1;
-  }
-`}</style>
-
                         </div>
-                    )}</div>}
-            </div>
+                    </div>
+                )}
 
-            <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
-                <SheetContent side="right" className="sm:max-w-md md:max-w-lg lg:max-w-xl overflow-y-auto">
-                    <SheetHeader style={{ borderBottom: '1px solid #ede7e7' }}>
-                        <SheetTitle>
-                            {isEditing ? 'Edit' : "Create"} Employee Asset
-                        </SheetTitle>
-                    </SheetHeader>
+                <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
+                    <SheetContent side="right" className="sm:max-w-md md:max-w-lg lg:max-w-xl overflow-y-auto">
+                        <SheetHeader style={{ borderBottom: '1px solid #ede7e7' }}>
+                            <SheetTitle>
+                                {isEditing ? 'Edit' : "Create"} Employee Asset
+                            </SheetTitle>
+                        </SheetHeader>
 
-                    <div className="" style={{ margin: '1rem' }}>
-                        <div style={{ maxHeight: "calc(100vh - 20vh )", overflowY: "auto" }}>
-                            <form id="assets-form" onSubmit={handleSubmit} className="space-y-6">
-                                {/* EMPLOYEE SECTION */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Employee Email</label>
-                                        <Select
-                                            options={employeeList}
-                                            value={employeeList.find((op) => op.label === formData.employeeName) || null}
-                                            onChange={(selected: any) =>
-                                                handleEmployeeChange(selected)
-                                            }
-                                            isSearchable={true}
-                                            isClearable={true}
-                                            placeholder="Select Employee"
-                                        />
-                                    </div>
+                        <div className="" style={{ margin: '1rem' }}>
+                            <div style={{ maxHeight: "calc(100vh - 20vh )", overflowY: "auto" }}>
+                                <form id="assets-form" onSubmit={handleSubmit} className="space-y-6">
+                                    {/* EMPLOYEE SECTION */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Employee Email</label>
+                                            <Select
+                                                options={employeeList}
+                                                value={employeeList.find((op) => op.label === formData.employeeName) || null}
+                                                onChange={(selected: any) =>
+                                                    handleEmployeeChange(selected)
+                                                }
+                                                isSearchable={true}
+                                                isClearable={true}
+                                                placeholder="Select Employee"
+                                            />
+                                        </div>
 
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Employee Id</label>
-                                        <input
-                                            type="text"
-                                            value={formData.employeeId}
-                                            readOnly
-                                            className="w-full border bg-gray-100 rounded px-3 py-2"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* MODEL SECTION */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
-                                    {[
-                                        { label: "Computer Name", name: "computerName" },
-                                        { label: "RAM", name: "ram" },
-                                        { label: "Device ID", name: "deviceId" },
-                                        { label: "Graphics Card", name: "graphicsCard" },
-                                        { label: "Processor", name: "processor" },
-                                    ].map((f) => (
-                                        <div key={f.name}>
-                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>{f.label}</label>
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Employee Id</label>
                                             <input
-                                                name={f.name}
-                                                value={(formData as any)[f.name]}
+                                                type="text"
+                                                value={formData.employeeId}
+                                                readOnly
+                                                className="w-full border bg-gray-100 rounded px-3 py-2"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* MODEL SECTION */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                                        {[
+                                            { label: "Computer Name", name: "computerName" },
+                                            { label: "RAM", name: "ram" },
+                                            { label: "Device ID", name: "deviceId" },
+                                            { label: "Graphics Card", name: "graphicsCard" },
+                                            { label: "Processor", name: "processor" },
+                                        ].map((f) => (
+                                            <div key={f.name}>
+                                                <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>{f.label}</label>
+                                                <input
+                                                    name={f.name}
+                                                    value={(formData as any)[f.name]}
+                                                    onChange={handleChange}
+                                                    disabled={false}
+                                                    className="w-full border rounded px-3 py-2"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* OS SECTION */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>OS</label>
+                                            <input
+                                                name="os"
+                                                value={formData.os}
                                                 onChange={handleChange}
                                                 disabled={false}
                                                 className="w-full border rounded px-3 py-2"
                                             />
                                         </div>
-                                    ))}
-                                </div>
 
-                                {/* OS SECTION */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>OS</label>
-                                        <input
-                                            name="os"
-                                            value={formData.os}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>OS Version</label>
-                                        <input
-                                            name="osVersion"
-                                            value={formData.osVersion}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* STORAGE SECTION */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
-                                    <div className="md:col-span-2">
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>
-                                            Storage Drives (Multiline)
-                                        </label>
-                                        <textarea
-                                            name="storageDrives"
-                                            value={formData.storageDrives}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2 h-24"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>SSD (Yes / No)</label>
-                                        <select
-                                            name="ssd"
-                                            value={formData.ssd}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        >
-                                            <option value="">Select</option>
-                                            <option>YES</option>
-                                            <option>NO</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>SSD Storage</label>
-                                        <input
-                                            name="ssdStorage"
-                                            value={formData.ssdStorage}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* OTHER FIELDS */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>From (Date)</label>
-                                        <input
-                                            type="date"
-                                            name="fromDate"
-                                            value={formData.fromDate}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        />
-                                    </div>
-
-                                    <div className="md:col-span-2">
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Remarks</label>
-                                        <textarea
-                                            name="remarks"
-                                            value={formData.remarks}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2 h-24"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* LOGIN DETAILS */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 border-b gap-4">
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Computer Username</label>
-                                        <input
-                                            name="computerUsername"
-                                            value={formData.computerUsername}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Computer Password</label>
-                                        <input
-                                            type="password"
-                                            name="computerPassword"
-                                            value={formData.computerPassword}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Bit Locker Key :</label>
-                                        <textarea
-                                            name="lockerKey"
-                                            value={formData.lockerKey}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2 h-24"
-                                        />
-                                    </div>
-
-
-
-                                </div>
-
-                                <div className="grid grid-cols-1  gap-4">
-                                    <div className="flex flex-wrap md:flex-nowrap items-center gap-6 mt-2">
-                                        {/* SIM */}
-                                        <label className="flex items-center gap-2">
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>OS Version</label>
                                             <input
-                                                type="checkbox"
-                                                name="sim"
-                                                checked={formData.sim}
+                                                name="osVersion"
+                                                value={formData.osVersion}
                                                 onChange={handleChange}
-                                                className="w-4 h-4"
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2"
                                             />
-                                            <span>SIM</span>
-                                        </label>
-
-                                        {/* Mouse */}
-                                        <label className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                name="mouse"
-                                                checked={formData.mouse}
-                                                onChange={handleChange}
-                                                className="w-4 h-4"
-                                            />
-                                            <span>Mouse</span>
-                                        </label>
-
-                                        {/* Bag */}
-                                        <label className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                name="bag"
-                                                checked={formData.bag}
-                                                onChange={handleChange}
-                                                className="w-4 h-4"
-                                            />
-                                            <span>Bag</span>
-                                        </label>
+                                        </div>
                                     </div>
 
-                                    {formData.sim && (<div>
-                                        <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>sim Number</label>
-                                        <input
-                                            type="number"
-                                            name="simNumber"
-                                            value={formData.simNumber}
-                                            onChange={handleChange}
-                                            disabled={false}
-                                            className="w-full border rounded px-3 py-2"
-                                        />
-                                    </div>)}
-                                </div>
-                            </form>
+                                    {/* STORAGE SECTION */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                                        <div className="md:col-span-2">
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>
+                                                Storage Drives (Multiline)
+                                            </label>
+                                            <textarea
+                                                name="storageDrives"
+                                                value={formData.storageDrives}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2 h-24"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>SSD (Yes / No)</label>
+                                            <select
+                                                name="ssd"
+                                                value={formData.ssd}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2"
+                                            >
+                                                <option value="">Select</option>
+                                                <option>YES</option>
+                                                <option>NO</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>SSD Storage</label>
+                                            <input
+                                                name="ssdStorage"
+                                                value={formData.ssdStorage}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* OTHER FIELDS */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>From (Date)</label>
+                                            <input
+                                                type="date"
+                                                name="fromDate"
+                                                value={formData.fromDate}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Remarks</label>
+                                            <textarea
+                                                name="remarks"
+                                                value={formData.remarks}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2 h-24"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* LOGIN DETAILS */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 border-b gap-4">
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Computer Username</label>
+                                            <input
+                                                name="computerUsername"
+                                                value={formData.computerUsername}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Computer Password</label>
+                                            <input
+                                                type="password"
+                                                name="computerPassword"
+                                                value={formData.computerPassword}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>Bit Locker Key :</label>
+                                            <textarea
+                                                name="lockerKey"
+                                                value={formData.lockerKey}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2 h-24"
+                                            />
+                                        </div>
+
+
+
+                                    </div>
+
+                                    <div className="grid grid-cols-1  gap-4">
+                                        <div className="flex flex-wrap md:flex-nowrap items-center gap-6 mt-2">
+                                            {/* SIM */}
+                                            <label className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    name="sim"
+                                                    checked={formData.sim}
+                                                    onChange={handleChange}
+                                                    className="w-4 h-4"
+                                                />
+                                                <span>SIM</span>
+                                            </label>
+
+                                            {/* Mouse */}
+                                            <label className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    name="mouse"
+                                                    checked={formData.mouse}
+                                                    onChange={handleChange}
+                                                    className="w-4 h-4"
+                                                />
+                                                <span>Mouse</span>
+                                            </label>
+
+                                            {/* Bag */}
+                                            <label className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    name="bag"
+                                                    checked={formData.bag}
+                                                    onChange={handleChange}
+                                                    className="w-4 h-4"
+                                                />
+                                                <span>Bag</span>
+                                            </label>
+                                        </div>
+
+                                        {formData.sim && (<div>
+                                            <label className="block font-medium mb-1" style={{ color: 'gray', fontSize: 'small', marginBottom: '9px', marginLeft: '3px' }}>sim Number</label>
+                                            <input
+                                                type="number"
+                                                name="simNumber"
+                                                value={formData.simNumber}
+                                                onChange={handleChange}
+                                                disabled={false}
+                                                className="w-full border rounded px-3 py-2"
+                                            />
+                                        </div>)}
+                                    </div>
+                                </form>
+                            </div>
+                            <Button
+                                form="assets-form"
+                                className="!bg-black hover:!bg-sky-600 !text-white shadow-md"
+                                style={{ right: 25, bottom: 2, position: 'fixed', background: 'blue' }}
+                                disabled={loading}
+                            >
+                                {isEditing ? 'Save' : "Create"}
+                            </Button>
                         </div>
-                        <Button
-                            form="assets-form"
-                            className="!bg-black hover:!bg-sky-600 !text-white shadow-md"
-                            style={{ right: 25, bottom: 2, position: 'fixed', background: 'blue' }}
-                            disabled={loading}
-                        >
-                            {isEditing ? 'Save' : "Create"}
-                        </Button>
-                    </div>
-                </SheetContent>
-            </Sheet>
-            <AssetHistoryModal
-                open={historyOpen}
-                onClose={closeHistory}
-                history={historyData}
-            />
+                    </SheetContent>
+                </Sheet>
+                <AssetHistoryModal
+                    open={historyOpen}
+                    onClose={closeHistory}
+                    history={historyData}
+                />
+            </div>
         </>
-
     );
 }

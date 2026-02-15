@@ -7,6 +7,8 @@ import { useMemo, useEffect, useState } from "react";
 import { api } from "@/lib/axios";
 import { AmcInfo, AmcFormValues, EntityOption } from "@/types/amc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -310,15 +312,6 @@ export default function AmcInfoPage() {
     };
   }, [editingAmc, dealers, customers]);
 
-  if (isLoading && amcList.length === 0) {
-    return (
-      <div className="container mx-auto py-10 text-center">
-        <p className="text-xl font-medium text-sky-600">
-          Loading data, please wait...
-        </p>
-      </div>
-    );
-  }
   const { state } = useSidebar();
 
   const handleSort = (field: any) => {
@@ -371,15 +364,17 @@ export default function AmcInfoPage() {
           + Add New AMC Info
         </Button>
       </header>
-      <div className="flex w-full justify-end">
-        <input
-          type="text"
-          placeholder="Search by Dealer or Customer"
-          value={searchTerm}
-          onChange={handleSearchChange}
-          style={{ padding: "8px", marginRight: "10px" }}
-          className="border-[2px] mb-2 w-full md:w-[25%] rounded-[4px]"
-        />
+      <div className="flex w-full justify-end mb-4">
+        <div className="relative rounded-[8px] w-full md:w-1/2 bg-white">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Input
+            placeholder="Search by Dealer or Customer"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="pl-10 py-5 border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+            aria-label="Search AMC Info"
+          />
+        </div>
       </div>
 
       {/* --- Data Table --- */}
@@ -417,6 +412,7 @@ export default function AmcInfoPage() {
             isSubmitting={isSubmitting}
             dealerOptions={dealers}
             customerOptions={customers}
+            isLoading={isLoading}
           />
         </SheetContent>
       </Sheet>

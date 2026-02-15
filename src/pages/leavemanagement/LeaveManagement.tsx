@@ -15,6 +15,7 @@ import {
     NotificationItem,
 } from './types';
 import { success } from 'zod';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const currentYear = new Date().getFullYear();
 const formatDate = (value: Date | string) => (typeof value === 'string' ? value : format(value, 'yyyy-MM-dd'));
@@ -598,6 +599,7 @@ const LeaveManagement: React.FC = () => {
     }, [requests, allEmployees, balances]);
 
     const [showNotifications, setShowNotifications] = useState(false);
+    const { state } = useSidebar();
 
     // Tab Styles
     const tabBase = "!px-4 !py-2 !rounded-full !text-sm !font-semibold !transition-all";
@@ -612,61 +614,34 @@ const LeaveManagement: React.FC = () => {
     const btnReject = "!bg-[#e11d48] !text-white !hover:bg-[#be123c]";
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900">
-            <div className="max-w-6xl mx-8 px-4 py-8 space-y-6">
+        <div className={`flex flex-col ${state == "expanded" ? "lg:w-[90%]" : "lg:w-full"} w-full max-w-none min-w-0 px-4 lg:px-8 py-6 space-y-4 lg:space-y-8`}>
+            <div className="space-y-6">
 
                 {/* Top Bar */}
-                <div className="flex justify-between items-center bg-white rounded-2xl px-6 py-4 shadow">
-                    {/* Modern Tabs */}
-                    <div className="bg-slate-100 p-1 rounded-full flex gap-1">
-                        <button
-                            className={`${tabBase} ${page === 'Employee' ? tabActive : tabInactive}`}
-                            onClick={() => setPage('Employee')}
-                        >
-                            My Leaves
-                        </button>
+                <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-2">Leave Management</h3>
+                        <p className="text-lg text-slate-600">Manage your leaves and holidays efficiently</p>
+                    </div>
 
-                        {user?.role === 'admin' && (
+                    {/* Modern Tabs - Restricted to Admin */}
+                    {user?.role === 'admin' && (
+                        <div className="bg-slate-100 p-1 rounded-full flex gap-1">
+                            <button
+                                className={`${tabBase} ${page === 'Employee' ? tabActive : tabInactive}`}
+                                onClick={() => setPage('Employee')}
+                            >
+                                My Leaves
+                            </button>
+
                             <button
                                 className={`${tabBase} ${page === 'HR' ? tabActive : tabInactive}`}
                                 onClick={() => setPage('HR')}
                             >
                                 HR Dashboard
                             </button>
-                        )}
-                    </div>
-
-                    {/* Notifications */}
-                    <div className="relative">
-                        <button
-                            className="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
-                            onClick={() => setShowNotifications((prev) => !prev)}
-                        >
-                            <span className="text-xl">🔔</span>
-                            {userNotifications.length ? (
-                                <span className="absolute top-0 right-0 h-4 w-4 text-[10px] bg-rose-500 rounded-full flex items-center justify-center text-white font-bold border-2 border-white">
-                                    {userNotifications.length}
-                                </span>
-                            ) : null}
-                        </button>
-
-                        {showNotifications && userNotifications.length ? (
-                            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden">
-                                <div className="bg-slate-50 px-4 py-2 border-b text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                    Notifications
-                                </div>
-                                <div className="max-h-64 overflow-y-auto">
-                                    {userNotifications.map((note) => (
-                                        <div key={note.id} className="p-3 border-b last:border-b-0 hover:bg-slate-50 transition-colors">
-                                            <p className="font-medium text-sm text-slate-900">{note.messageTitle}</p>
-                                            <p className="text-xs text-slate-500 mt-0.5">{note.messageBody}</p>
-                                            <p className="text-[10px] text-slate-400 mt-2 text-right">{new Date(note.scheduledAt).toLocaleDateString()}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : null}
-                    </div>
+                        </div>
+                    )}
                 </div>
 
                 {page === 'Employee' ? (
@@ -697,11 +672,7 @@ const LeaveManagement: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
-                                    <p className="text-sm text-slate-500">Manage your leaves and holidays</p>
-                                </div>
+                            <div className="flex items-center justify-end">
                                 <button
                                     className={`${btnBase} ${btnOutline}`}
                                     onClick={() => setShowHolidayPanel((prev) => !prev)}

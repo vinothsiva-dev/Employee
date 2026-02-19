@@ -17,7 +17,21 @@ import {
 } from './types';
 import { success } from 'zod';
 import { useSidebar } from '@/components/ui/sidebar';
-import { Search, TrendingUp, Inbox } from 'lucide-react';
+import { Search, TrendingUp, Inbox, Filter, Calendar } from 'lucide-react';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 const currentYear = new Date().getFullYear();
 const formatDate = (value: Date | string) => (typeof value === 'string' ? value : format(value, 'yyyy-MM-dd'));
@@ -73,6 +87,11 @@ const LeaveManagement: React.FC = () => {
     const [policyForm, setPolicyForm] = useState(leavePolicy);
     const [searchTerm, setSearchTerm] = useState("");
 
+    // Audit Log Filters
+    const [auditSearch, setAuditSearch] = useState("");
+    const [auditMonth, setAuditMonth] = useState<string>("all");
+    const [auditStatus, setAuditStatus] = useState<string>("all");
+
     // Guards to prevent accidental double-submit / double-approval
     const [submittingLeave, setSubmittingLeave] = useState(false);
     const [processingActions, setProcessingActions] = useState<Record<string, boolean>>({}); // requestId -> true
@@ -90,6 +109,13 @@ const LeaveManagement: React.FC = () => {
         }
     }, [user]);
 
+    const getEmployeeName = (id?: string) => {
+        if (!id) return 'Unknown';
+        const emp = allEmployees.find(e => (e.employee_id === id || e._id === id || e.id === id));
+        if (!emp) return id;
+        return `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() || emp.name || id;
+    };
+
     const activeUser = allEmployees.find((emp) => emp.employee_id === userId) || {
         id: userId,
         employee_id: userId,
@@ -98,6 +124,28 @@ const LeaveManagement: React.FC = () => {
     } as any;
 
     const holidayKeys = holidays.filter((h) => h.isActive).map((h) => h.date);
+
+    const filteredAuditLogs = useMemo(() => {
+        return auditLogs.filter(log => {
+            const actorName = getEmployeeName(log.actor).toLowerCase();
+            const matchesSearch = actorName.includes(auditSearch.toLowerCase());
+
+            const matchesStatus = auditStatus === 'all' || log.action === auditStatus;
+
+            const logDate = parseISO(log.createdAt);
+            const matchesMonth = auditMonth === 'all' || format(logDate, 'yyyy-MM') === auditMonth;
+
+            return matchesSearch && matchesStatus && matchesMonth;
+        });
+    }, [auditLogs, auditSearch, auditStatus, auditMonth, allEmployees]);
+
+    const monthOptions = useMemo(() => {
+        const months = new Set<string>();
+        auditLogs.forEach(log => {
+            months.add(format(parseISO(log.createdAt), 'yyyy-MM'));
+        });
+        return Array.from(months).sort().reverse();
+    }, [auditLogs]);
 
     // Initial Data Fetch
     React.useEffect(() => {
@@ -177,13 +225,6 @@ const LeaveManagement: React.FC = () => {
     const logAction = (entry: LeaveApprovalLog) => setLogs((prev) => [entry, ...prev]);
     const addNotification = (note: Omit<NotificationItem, 'id' | 'scheduledAt'>) =>
         setNotifications((prev) => [...prev, { ...note, id: `note-${Date.now()}`, scheduledAt: new Date().toISOString() }]);
-
-    const getEmployeeName = (id?: string) => {
-        if (!id) return 'Unknown';
-        const emp = allEmployees.find(e => (e.employee_id === id || e._id === id || e.id === id));
-        if (!emp) return id;
-        return `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() || emp.name || id;
-    };
 
     const refreshData = () => {
         api.get(`/api/leave/balances?employeeId=${encodeURIComponent(userId)}`)
@@ -1204,15 +1245,87 @@ const LeaveManagement: React.FC = () => {
                                             <p className="text-xs uppercase text-slate-500">Audit Trail</p>
                                             <h3 className="text-lg font-bold text-slate-900">Leave Activity Log</h3>
                                         </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <div className="relative">
+                                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search actor..."
+                                                    value={auditSearch}
+                                                    onChange={(e) => setAuditSearch(e.target.value)}
+                                                    className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-400 w-32 transition-all"
+                                                />
+                                            </div>
+
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg border-slate-200">
+                                                        <Filter className="h-4 w-4 text-slate-500" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-60 p-4 space-y-4" align="end">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold uppercase text-slate-500">Action Type</label>
+                                                        <Select value={auditStatus} onValueChange={setAuditStatus}>
+                                                            <SelectTrigger className="h-8 text-xs">
+                                                                <SelectValue placeholder="Select type" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Actions</SelectItem>
+                                                                <SelectItem value="APPLY">Apply</SelectItem>
+                                                                <SelectItem value="APPROVE">Approve</SelectItem>
+                                                                <SelectItem value="REJECT">Reject</SelectItem>
+                                                                <SelectItem value="CANCEL">Cancel</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold uppercase text-slate-500">Month</label>
+                                                        <Select value={auditMonth} onValueChange={setAuditMonth}>
+                                                            <SelectTrigger className="h-8 text-xs">
+                                                                <SelectValue placeholder="Select month" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Months</SelectItem>
+                                                                {monthOptions.map(m => (
+                                                                    <SelectItem key={m} value={m}>
+                                                                        {format(parseISO(`${m}-01`), 'MMMM yyyy')}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="w-full text-[10px] h-7 text-slate-500"
+                                                        onClick={() => {
+                                                            setAuditSearch("");
+                                                            setAuditStatus("all");
+                                                            setAuditMonth("all");
+                                                        }}
+                                                    >
+                                                        Reset Filters
+                                                    </Button>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
                                     </div>
 
                                     <div className="overflow-y-auto max-h-[400px] border border-slate-100 rounded-xl scrollbar-thin scrollbar-thumb-slate-200">
                                         <div className="divide-y divide-slate-50">
-                                            {auditLogs.length > 0 ? (
-                                                auditLogs.map((log) => (
+                                            {filteredAuditLogs.length > 0 ? (
+                                                filteredAuditLogs.map((log) => (
                                                     <div key={log._id} className="p-3 text-xs hover:bg-slate-50 transition-colors">
                                                         <div className="flex justify-between items-start mb-1">
-                                                            <span className="font-bold text-slate-900">
+                                                            <span className={`font-bold px-1.5 py-0.5 rounded text-[9px] ${log.action === 'APPROVE' ? 'bg-green-50 text-green-700' :
+                                                                log.action === 'REJECT' ? 'bg-red-50 text-red-700' :
+                                                                    log.action === 'CANCEL' ? 'bg-orange-50 text-orange-700' :
+                                                                        'bg-blue-50 text-blue-700'
+                                                                }`}>
                                                                 {log.action}
                                                             </span>
                                                             <span className="text-[10px] text-slate-400">
@@ -1237,7 +1350,7 @@ const LeaveManagement: React.FC = () => {
                                                 ))
                                             ) : (
                                                 <div className="p-8 text-center text-slate-400 italic text-sm">
-                                                    No activity logs found.
+                                                    No activity logs found for the selected filters.
                                                 </div>
                                             )}
                                         </div>

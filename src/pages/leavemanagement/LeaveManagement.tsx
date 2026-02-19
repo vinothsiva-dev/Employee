@@ -16,6 +16,7 @@ import {
 } from './types';
 import { success } from 'zod';
 import { useSidebar } from '@/components/ui/sidebar';
+import { Search, TrendingUp, Inbox } from 'lucide-react';
 
 const currentYear = new Date().getFullYear();
 const formatDate = (value: Date | string) => (typeof value === 'string' ? value : format(value, 'yyyy-MM-dd'));
@@ -68,6 +69,7 @@ const LeaveManagement: React.FC = () => {
 
     const [leavePolicy, setLeavePolicy] = useState({ EL: 12, CL: 6, SL: 6 });
     const [policyForm, setPolicyForm] = useState(leavePolicy);
+    const [searchTerm, setSearchTerm] = useState("");
 
     // Guards to prevent accidental double-submit / double-approval
     const [submittingLeave, setSubmittingLeave] = useState(false);
@@ -591,12 +593,20 @@ const LeaveManagement: React.FC = () => {
             if (!target) return;
 
             if (year === currentYear && month === currentMonth) {
-                target.monthly[req.leaveType] += req.totalDays;
+                target.monthly[req.leaveType as LeaveType] += req.totalDays;
             }
         });
 
         return Object.values(record);
     }, [requests, allEmployees, balances]);
+
+    const filteredAnalytics = useMemo(() => {
+        return analyticsByEmployeeCorrected.filter((row) => {
+            const fullName = `${row.employee.first_name ?? ''} ${row.employee.last_name ?? ''}`.toLowerCase();
+            return fullName.includes(searchTerm.toLowerCase()) ||
+                (row.employee.employee_id && row.employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase()));
+        });
+    }, [analyticsByEmployeeCorrected, searchTerm]);
 
     const [showNotifications, setShowNotifications] = useState(false);
     const { state } = useSidebar();
@@ -934,7 +944,11 @@ const LeaveManagement: React.FC = () => {
                                             );
                                         })
                                     ) : (
-                                        <p className="text-sm text-slate-500">No pending leaves.</p>
+                                        <div className="flex flex-col items-center justify-center p-20 text-slate-400 text-center">
+                                            <Inbox className="w-12 h-12 mb-4 opacity-20" />
+                                            <p className="text-lg font-medium text-slate-600">No Leave Requests Found</p>
+                                            <p className="text-sm opacity-60 max-w-[280px]">All caught up! There are no pending leave applications to review right now.</p>
+                                        </div>
                                     )}
                                 </div>
                             </section>
@@ -1062,41 +1076,67 @@ const LeaveManagement: React.FC = () => {
                             </section>
 
                             <section className="grid gap-4 lg:grid-cols-2">
-                                {/* <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-xs uppercase text-slate-500">Analytics</p>
-                                        <p className="text-xs text-slate-400">Month vs year per employee</p>
+                                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">Analytics</p>
+                                            <h3 className="text-lg font-bold text-slate-900">Employee Leave Overview</h3>
+                                        </div>
+
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search employee..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 transition-all w-64"
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div className="overflow-x-auto">
+                                    <div className="overflow-x-auto overflow-y-auto max-h-[400px] border border-slate-100 rounded-xl scrollbar-thin scrollbar-thumb-slate-200">
                                         <table className="w-full text-sm">
-                                            <thead className="text-left text-[10px] text-slate-400">
+                                            <thead className="text-left text-[10px] text-slate-400 sticky top-0 bg-white z-10 shadow-sm">
                                                 <tr>
-                                                    <th className="pb-2">Employee</th>
-                                                    <th className="pb-2 text-center">Month EL</th>
-                                                    <th className="pb-2 text-center">Month CL</th>
-                                                    <th className="pb-2 text-center">Month SL</th>
-                                                    <th className="pb-2 text-center">Balance EL</th>
-                                                    <th className="pb-2 text-center">Balance CL</th>
-                                                    <th className="pb-2 text-center">Balance SL</th>
+                                                    <th className="p-3 bg-white">Employee</th>
+                                                    <th className="p-3 text-center border-r border-slate-100 bg-white" colSpan={3}>Month</th>
+                                                    <th className="p-3 text-center bg-white" colSpan={3}>Balance</th>
+                                                </tr>
+                                                <tr>
+                                                    <th className="pb-2 px-3 bg-white"></th>
+                                                    <th className="pb-2 text-center text-xs bg-white">EL</th>
+                                                    <th className="pb-2 text-center text-xs bg-white">CL</th>
+                                                    <th className="pb-2 text-center text-xs border-r border-slate-100 bg-white">SL</th>
+                                                    <th className="pb-2 text-center text-xs bg-white">EL</th>
+                                                    <th className="pb-2 text-center text-xs bg-white">CL</th>
+                                                    <th className="pb-2 text-center text-xs bg-white">SL</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="text-slate-600">
-                                                {analyticsByEmployeeCorrected.map((row) => (
-                                                    <tr key={row.employee.id ?? row.employee.employee_id} className="border-t border-slate-100">
-                                                        <td className="py-3 font-semibold">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
-                                                        <td className="py-3 text-center">{row.monthly.EL}</td>
-                                                        <td className="py-3 text-center">{row.monthly.CL}</td>
-                                                        <td className="py-3 text-center">{row.monthly.SL}</td>
-                                                        <td className="py-3 text-center">{row.yearly.EL}</td>
-                                                        <td className="py-3 text-center">{row.yearly.CL}</td>
-                                                        <td className="py-3 text-center">{row.yearly.SL}</td>
+                                            <tbody className="text-slate-600 divide-y divide-slate-50">
+                                                {filteredAnalytics.length > 0 ? (
+                                                    filteredAnalytics.map((row) => (
+                                                        <tr key={row.employee.id ?? row.employee.employee_id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="p-3 font-semibold text-xs">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
+                                                            <td className="p-3 text-center">{row.monthly.EL}</td>
+                                                            <td className="p-3 text-center">{row.monthly.CL}</td>
+                                                            <td className="p-3 text-center border-r border-slate-100">{row.monthly.SL}</td>
+                                                            <td className="p-3 text-center font-medium">{row.yearly.EL}</td>
+                                                            <td className="p-3 text-center font-medium">{row.yearly.CL}</td>
+                                                            <td className="p-3 text-center font-medium">{row.yearly.SL}</td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={7} className="p-8 text-center text-slate-400 italic">
+                                                            No employees found matching "{searchTerm}"
+                                                        </td>
                                                     </tr>
-                                                ))}
+                                                )}
                                             </tbody>
                                         </table>
                                     </div>
-                                </article> */}
+                                </article>
 
                                 <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
                                     <p className="text-xs uppercase text-slate-500">Audit log</p>

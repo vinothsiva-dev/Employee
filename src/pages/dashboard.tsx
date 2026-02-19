@@ -9,6 +9,8 @@ import {
   TrendingUp,
   CheckCircle2,
   UserCheck,
+  Search,
+  Inbox,
 } from "lucide-react";
 import StatsCards from "../components/StatsCards";
 import AttendanceOverview from "../components/AttendanceOverview";
@@ -32,6 +34,7 @@ export default function Dashboard() {
   const [processingActions, setProcessingActions] = useState<Record<string, boolean>>({});
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [leaveType, setLeaveType] = useState<LeaveType>('EL');
+  const [searchTerm, setSearchTerm] = useState("");
 
 
   const { state } = useSidebar()
@@ -191,12 +194,20 @@ export default function Dashboard() {
       if (!target) return;
 
       if (year === currentYear && month === currentMonth) {
-        target.monthly[req.leaveType] += req.totalDays;
+        target.monthly[req.leaveType as LeaveType] += req.totalDays;
       }
     });
 
     return Object.values(record);
   }, [requests, allEmployees, balances]);
+
+  const filteredAnalytics = useMemo(() => {
+    return analyticsByEmployeeCorrected.filter((row) => {
+      const fullName = `${row.employee.first_name ?? ''} ${row.employee.last_name ?? ''}`.toLowerCase();
+      return fullName.includes(searchTerm.toLowerCase()) ||
+        (row.employee.employee_id && row.employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase()));
+    });
+  }, [analyticsByEmployeeCorrected, searchTerm]);
 
   useEffect(() => {
     if (user && user.role === "admin") {
@@ -248,8 +259,6 @@ export default function Dashboard() {
         <StatsCards
           title="Total Employees"
           value={dashboardData?.totalEmployees?.count}
-          icon={Users}
-          gradient="from-blue-500 to-blue-600"
           change={dashboardData?.totalEmployees?.diff}
           isLoading={isLoading}
           to="Employees"
@@ -257,8 +266,6 @@ export default function Dashboard() {
         <StatsCards
           title="Active Projects"
           value={dashboardData?.activeProjects?.count}
-          icon={FolderOpen}
-          gradient="from-purple-500 to-purple-600"
           change={dashboardData?.activeProjects?.diff}
           isLoading={isLoading}
           to="Projects"
@@ -266,8 +273,6 @@ export default function Dashboard() {
         <StatsCards
           title="Current Month Attendance"
           value={dashboardData?.thisMonthAttendance?.count}
-          icon={Clock}
-          gradient="from-green-500 to-green-600"
           change={dashboardData?.thisMonthAttendance?.diff}
           isLoading={isLoading}
           to="Attendance"
@@ -275,8 +280,6 @@ export default function Dashboard() {
         <StatsCards
           title="Today's Attendance"
           value={dashboardData?.attendaneState?.todayPresent}
-          icon={UserCheck}
-          gradient="from-orange-500 to-orange-600"
           change={dashboardData?.completedTasks?.diff}
           isLoading={isLoading}
           to="Attendance"
@@ -370,40 +373,62 @@ export default function Dashboard() {
 
                       {/* Analytics */}
                       <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs uppercase text-slate-500">Analytics</p>
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="text-xs uppercase text-slate-500">Analytics</p>
+                            <h3 className="text-lg font-bold text-slate-900">Employee Leave Overview</h3>
+                          </div>
+
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                              type="text"
+                              placeholder="Search employee..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 transition-all w-64"
+                            />
+                          </div>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto overflow-y-auto max-h-[400px] border border-slate-100 rounded-xl scrollbar-thin scrollbar-thumb-slate-200">
                           <table className="w-full text-sm">
-                            <thead className="text-left text-[10px] text-slate-400">
+                            <thead className="text-left text-[10px] text-slate-400 sticky top-0 bg-white z-10 shadow-sm">
                               <tr>
-                                <th className="pb-2">Employee</th>
-                                <th className="pb-2 text-center border-r border-slate-100" colSpan={3}>Month</th>
-                                <th className="pb-2 text-center" colSpan={3}>Balance</th>
+                                <th className="p-3 bg-white">Employee</th>
+                                <th className="p-3 text-center border-r border-slate-100 bg-white" colSpan={3}>Month</th>
+                                <th className="p-3 text-center bg-white" colSpan={3}>Balance</th>
                               </tr>
                               <tr>
-                                <th className="pb-2"></th>
-                                <th className="pb-2 text-center text-xs">EL</th>
-                                <th className="pb-2 text-center text-xs">CL</th>
-                                <th className="pb-2 text-center text-xs border-r border-slate-100">SL</th>
-                                <th className="pb-2 text-center text-xs">EL</th>
-                                <th className="pb-2 text-center text-xs">CL</th>
-                                <th className="pb-2 text-center text-xs">SL</th>
+                                <th className="pb-2 px-3 bg-white"></th>
+                                <th className="pb-2 text-center text-xs bg-white">EL</th>
+                                <th className="pb-2 text-center text-xs bg-white">CL</th>
+                                <th className="pb-2 text-center text-xs border-r border-slate-100 bg-white">SL</th>
+                                <th className="pb-2 text-center text-xs bg-white">EL</th>
+                                <th className="pb-2 text-center text-xs bg-white">CL</th>
+                                <th className="pb-2 text-center text-xs bg-white">SL</th>
                               </tr>
                             </thead>
-                            <tbody className="text-slate-600">
-                              {analyticsByEmployeeCorrected.map((row) => (
-                                <tr key={row.employee.id ?? row.employee.employee_id} className="border-t border-slate-100">
-                                  <td className="py-3 font-semibold text-xs">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
-                                  <td className="py-3 text-center">{row.monthly.EL}</td>
-                                  <td className="py-3 text-center">{row.monthly.CL}</td>
-                                  <td className="py-3 text-center border-r border-slate-100">{row.monthly.SL}</td>
-                                  <td className="py-3 text-center">{row.yearly.EL}</td>
-                                  <td className="py-3 text-center">{row.yearly.CL}</td>
-                                  <td className="py-3 text-center">{row.yearly.SL}</td>
+                            <tbody className="text-slate-600 divide-y divide-slate-50">
+                              {filteredAnalytics.length > 0 ? (
+                                filteredAnalytics.map((row) => (
+                                  <tr key={row.employee.id ?? row.employee.employee_id} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="p-3 font-semibold text-xs">{(row.employee.first_name ?? '') + " " + (row.employee.last_name ?? '')}</td>
+                                    <td className="p-3 text-center">{row.monthly.EL}</td>
+                                    <td className="p-3 text-center">{row.monthly.CL}</td>
+                                    <td className="p-3 text-center border-r border-slate-100">{row.monthly.SL}</td>
+                                    <td className="p-3 text-center font-medium">{row.yearly.EL}</td>
+                                    <td className="p-3 text-center font-medium">{row.yearly.CL}</td>
+                                    <td className="p-3 text-center font-medium">{row.yearly.SL}</td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={7} className="p-8 text-center text-slate-400 italic">
+                                    No employees found matching "{searchTerm}"
+                                  </td>
                                 </tr>
-                              ))}
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -475,7 +500,11 @@ export default function Dashboard() {
                                 );
                               })
                             ) : (
-                              <p className="text-sm text-slate-500">No pending leaves.</p>
+                              <div className="flex flex-col items-center justify-center p-20 text-slate-400 text-center">
+                                <Inbox className="w-12 h-12 mb-4 opacity-20" />
+                                <p className="text-lg font-medium text-slate-600">No Leave Requests Found</p>
+                                <p className="text-sm opacity-60 max-w-[280px]">All caught up! There are no pending leave applications to review right now.</p>
+                              </div>
                             )}
                           </div>
                         </section>

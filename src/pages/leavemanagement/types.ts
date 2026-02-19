@@ -1,5 +1,5 @@
 export type Role = 'Employee' | 'HR';
-export type LeaveType = 'EL' | 'CL' | 'SL';
+export type LeaveType = 'EL' | 'CL' | 'SL' | 'LOP';
 export type LeaveStatus =
   | 'Draft'
   | 'Submitted'
@@ -51,6 +51,7 @@ export interface LeaveRequest {
   hrApproverId?: string;
   hrActionAt?: string;
   hrRemarks?: string;
+  cancelledById?: string;
 }
 
 export interface LeaveApprovalLog {

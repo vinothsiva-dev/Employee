@@ -8,6 +8,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import NotificationBar from "./NotificationBar";
 
 const Layout: React.FC = () => {
   // const state =useSidebar()
@@ -25,7 +26,9 @@ const Layout: React.FC = () => {
               <span>•</span>
               <span>Employee Management</span>
             </div>
-            <div className="ml-auto" />
+            <div className="ml-auto flex items-center gap-4">
+              <NotificationBar />
+            </div>
           </header>
 
           {/* No width clamps here */}

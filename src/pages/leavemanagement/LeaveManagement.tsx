@@ -173,6 +173,13 @@ const LeaveManagement: React.FC = () => {
     const addNotification = (note: Omit<NotificationItem, 'id' | 'scheduledAt'>) =>
         setNotifications((prev) => [...prev, { ...note, id: `note-${Date.now()}`, scheduledAt: new Date().toISOString() }]);
 
+    const getEmployeeName = (id?: string) => {
+        if (!id) return 'Unknown';
+        const emp = allEmployees.find(e => (e.employee_id === id || e._id === id || e.id === id));
+        if (!emp) return id;
+        return `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() || emp.name || id;
+    };
+
     const refreshData = () => {
         api.get(`/api/leave/balances?employeeId=${encodeURIComponent(userId)}`)
             .then(res => setBalances(prev => prev.map(b => b.employeeId === userId ? res.data : b)));
@@ -182,6 +189,7 @@ const LeaveManagement: React.FC = () => {
     };
 
     const availableBalance = (employeeId: string, type: LeaveType) => {
+        if (type === 'LOP') return 999; // Loss of pay doesn't have a limit
         const balance = balances.find((item) => item.employeeId === employeeId);
         if (!balance) return 0;
         return type === 'EL'
@@ -345,7 +353,8 @@ const LeaveManagement: React.FC = () => {
             setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Cancelled' } : r));
 
             const res = await api.patch(`/api/leave/${requestId}/status`, {
-                status: 'Cancelled'
+                status: 'Cancelled',
+                cancelledById: userId
             });
 
             if (res.status === 200) {
@@ -544,7 +553,7 @@ const LeaveManagement: React.FC = () => {
     };
 
     const stats = useMemo(() => {
-        const summary: Record<LeaveType, number> = { EL: 0, CL: 0, SL: 0 };
+        const summary: Record<LeaveType, number> = { EL: 0, CL: 0, SL: 0, LOP: 0 };
         requests.forEach((req) => {
             if (req.status === 'HR_Approved' || req.status === 'AutoProcessed') {
                 summary[req.leaveType] += req.totalDays;
@@ -570,8 +579,8 @@ const LeaveManagement: React.FC = () => {
             if (emp.employee_id) {
                 record[emp.employee_id] = {
                     employee: emp,
-                    monthly: { EL: 0, CL: 0, SL: 0 },
-                    yearly: { EL: 0, CL: 0, SL: 0 },
+                    monthly: { EL: 0, CL: 0, SL: 0, LOP: 0 },
+                    yearly: { EL: 0, CL: 0, SL: 0, LOP: 0 },
                 };
             }
         });
@@ -722,6 +731,7 @@ const LeaveManagement: React.FC = () => {
                                                 <option value="EL">Earned</option>
                                                 <option value="CL">Casual</option>
                                                 <option value="SL">Sick</option>
+                                                <option value="LOP">Loss of Pay (LOP)</option>
                                             </select>
 
                                             <input
@@ -855,6 +865,29 @@ const LeaveManagement: React.FC = () => {
                                                     <span className="text-xs uppercase">{request.status}</span>
                                                 </div>
                                                 <p className="text-xs text-slate-400 mt-2">{request.reason || 'No reason provided'}</p>
+
+                                                <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-[10px] text-slate-500 border-t border-slate-50 pt-3">
+                                                    <div className="flex gap-1.5 items-center">
+                                                        <span className="font-semibold text-slate-700 uppercase tracking-tighter">Applied By</span>
+                                                        <span className="bg-slate-50 px-2 py-0.5 rounded-full">{getEmployeeName(request.employeeId)}</span>
+                                                    </div>
+
+                                                    {request.hrApproverId && (
+                                                        <div className="flex gap-1.5 items-center">
+                                                            <span className="font-semibold text-slate-700 uppercase tracking-tighter">
+                                                                {request.status === 'HR_Approved' ? 'Approved By' : 'Rejected By'}
+                                                            </span>
+                                                            <span className="bg-slate-50 px-2 py-0.5 rounded-full">{getEmployeeName(request.hrApproverId)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {request.status === 'Cancelled' && request.cancelledById && (
+                                                        <div className="flex gap-1.5 items-center">
+                                                            <span className="font-semibold text-slate-700 uppercase tracking-tighter">Cancelled By</span>
+                                                            <span className="bg-slate-50 px-2 py-0.5 rounded-full">{getEmployeeName(request.cancelledById)}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </article>
                                         ))
                                     ) : (

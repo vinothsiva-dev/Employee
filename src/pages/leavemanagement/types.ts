@@ -98,3 +98,16 @@ export interface AttendanceRecord {
   deductionLogId?: string;
 }
 
+export interface AuditLogEntry {
+  _id: string;
+  entity: 'Client' | 'Task' | 'Leave';
+  entityId: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'RESTORE' | 'SOFT_DELETE' | 'APPLY' | 'APPROVE' | 'REJECT' | 'CANCEL';
+  changes: {
+    before?: any;
+    after?: any;
+    diff?: any;
+  };
+  actor: string;
+  createdAt: string;
+}

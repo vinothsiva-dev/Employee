@@ -13,6 +13,7 @@ import {
     LeaveStatus,
     LeaveType,
     NotificationItem,
+    AuditLogEntry,
 } from './types';
 import { success } from 'zod';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -58,6 +59,7 @@ const LeaveManagement: React.FC = () => {
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [page, setPage] = useState<'Employee' | 'HR'>('Employee');
+    const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
     const [leaveType, setLeaveType] = useState<LeaveType>('EL');
     const [fromDate, setFromDate] = useState(formatDate(new Date()));
     const [toDate, setToDate] = useState(formatDate(new Date()));
@@ -109,11 +111,14 @@ const LeaveManagement: React.FC = () => {
 
                 // Admin data
                 if (user?.role === 'admin') {
-                    const [empRes, allBalancesRes, adminRequestsRes] = await Promise.all([
+                    const [empRes, allBalancesRes, adminRequestsRes, auditLogsRes] = await Promise.all([
                         api.get('/api/employee/getAllEmployee'),
                         api.get('/api/leave/all-balances'),
-                        api.get('/api/leave?status=Submitted')
+                        api.get('/api/leave?status=Submitted'),
+                        api.get('/api/audit?entity=Leave')
                     ]);
+
+                    if (auditLogsRes?.data) setAuditLogs(auditLogsRes.data);
 
                     if (empRes?.data) setAllEmployees(empRes.data);
                     if (allBalancesRes?.data) {
@@ -186,6 +191,11 @@ const LeaveManagement: React.FC = () => {
 
         api.get(`/api/leave?employeeId=${encodeURIComponent(userId)}`)
             .then(res => setRequests(res.data.map((r: any) => ({ ...r, id: r._id }))));
+
+        if (user?.role === 'admin') {
+            api.get('/api/audit?entity=Leave')
+                .then(res => setAuditLogs(res.data));
+        }
     };
 
     const availableBalance = (employeeId: string, type: LeaveType) => {
@@ -262,6 +272,7 @@ const LeaveManagement: React.FC = () => {
                 });
 
                 showToast?.success('Leave request submitted successfully.');
+                if (user?.role === 'admin') refreshData(); // refresh audit logs if admin applies
             } else {
                 showToast?.error('Failed to submit leave.', 'error');
             }
@@ -1171,7 +1182,7 @@ const LeaveManagement: React.FC = () => {
                                     </div>
                                 </article>
 
-                                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                                {/* <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
                                     <p className="text-xs uppercase text-slate-500">Audit log</p>
                                     <div className="space-y-2 text-sm">
                                         {logs.slice(0, 4).map((log) => (
@@ -1184,6 +1195,52 @@ const LeaveManagement: React.FC = () => {
                                             </div>
                                         ))}
                                         {!logs.length && <p className="text-xs text-slate-500">No logs yet</p>}
+                                    </div>
+                                </article> */}
+
+                                <article className="bg-white rounded-2xl border border-slate-200 shadow p-5 space-y-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">Audit Trail</p>
+                                            <h3 className="text-lg font-bold text-slate-900">Leave Activity Log</h3>
+                                        </div>
+                                    </div>
+
+                                    <div className="overflow-y-auto max-h-[400px] border border-slate-100 rounded-xl scrollbar-thin scrollbar-thumb-slate-200">
+                                        <div className="divide-y divide-slate-50">
+                                            {auditLogs.length > 0 ? (
+                                                auditLogs.map((log) => (
+                                                    <div key={log._id} className="p-3 text-xs hover:bg-slate-50 transition-colors">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span className="font-bold text-slate-900">
+                                                                {log.action}
+                                                            </span>
+                                                            <span className="text-[10px] text-slate-400">
+                                                                {format(parseISO(log.createdAt), 'MMM dd, HH:mm')}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-slate-600">
+                                                            <span className="font-medium text-slate-800">{getEmployeeName(log.actor)}</span>
+                                                            {log.action === 'APPLY' && ` applied for leave`}
+                                                            {log.action === 'APPROVE' && ` approved a leave request`}
+                                                            {log.action === 'REJECT' && ` rejected a leave request`}
+                                                            {log.action === 'CANCEL' && ` cancelled a leave request`}
+                                                        </p>
+                                                        {log.action !== 'APPLY' && log.changes?.before && (
+                                                            <div className="mt-1 flex gap-2 items-center text-[10px]">
+                                                                <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-500">{log.changes.before}</span>
+                                                                <span className="text-slate-300">→</span>
+                                                                <span className="px-1.5 py-0.5 bg-blue-50 rounded text-blue-600 font-medium">{log.changes.after}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-8 text-center text-slate-400 italic text-sm">
+                                                    No activity logs found.
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </article>
                             </section>

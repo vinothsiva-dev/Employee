@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Bell } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "@/lib/axios";
 import { useAuth } from "@/context/AuthContext";
@@ -11,6 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Notification {
     _id: string;
@@ -83,14 +89,23 @@ const NotificationBar: React.FC = () => {
                 <div className="flex items-center justify-between border-b px-4 py-2">
                     <h4 className="text-sm font-semibold">Notifications</h4>
                     {unreadCount > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                            onClick={markAllAsRead}
-                        >
-                            Mark all as read
-                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                        onClick={markAllAsRead}
+                                    >
+                                        <CheckCheck className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Mark all as read</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
                 </div>
                 <ScrollArea className="h-80">
@@ -119,7 +134,8 @@ const NotificationBar: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                    )}
+                    )
+                    }
                 </ScrollArea>
             </PopoverContent>
         </Popover>

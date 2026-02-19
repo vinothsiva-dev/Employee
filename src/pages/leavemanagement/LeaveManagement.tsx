@@ -1000,6 +1000,11 @@ const LeaveManagement: React.FC = () => {
                                                         {request.startDate} → {request.endDate}
                                                     </p>
 
+                                                    {request.reason && (
+                                                        <p className="text-xs text-slate-600 italic">
+                                                            "{request.reason}"
+                                                        </p>
+                                                    )}
                                                     <div className="flex flex-wrap gap-2">
                                                         <button
                                                             className={`${btnBase} ${btnApprove}`}
@@ -1029,7 +1034,7 @@ const LeaveManagement: React.FC = () => {
                                             );
                                         })
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center p-20 text-slate-400 text-center">
+                                        <div className="flex flex-col items-center justify-center p-5 text-slate-400 text-center">
                                             <Inbox className="w-12 h-12 mb-4 opacity-20" />
                                             <p className="text-lg font-medium text-slate-600">No Leave Requests Found</p>
                                             <p className="text-sm opacity-60 max-w-[280px]">All caught up! There are no pending leave applications to review right now.</p>

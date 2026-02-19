@@ -171,8 +171,8 @@ export default function Dashboard() {
       if (emp.employee_id) {
         record[emp.employee_id] = {
           employee: emp,
-          monthly: { EL: 0, CL: 0, SL: 0 },
-          yearly: { EL: 0, CL: 0, SL: 0 },
+          monthly: { EL: 0, CL: 0, SL: 0, LOP: 0 },
+          yearly: { EL: 0, CL: 0, SL: 0, LOP: 0 },
         };
       }
     });
@@ -466,7 +466,7 @@ export default function Dashboard() {
                                     </p>
 
                                     {request.reason && (
-                                      <p className="text-xs text-slate-600 line-clamp-2 italic">
+                                      <p className="text-xs text-slate-600 italic">
                                         "{request.reason}"
                                       </p>
                                     )}
@@ -500,10 +500,10 @@ export default function Dashboard() {
                                 );
                               })
                             ) : (
-                              <div className="flex flex-col items-center justify-center p-20 text-slate-400 text-center">
-                                <Inbox className="w-12 h-12 mb-4 opacity-20" />
-                                <p className="text-lg font-medium text-slate-600">No Leave Requests Found</p>
-                                <p className="text-sm opacity-60 max-w-[280px]">All caught up! There are no pending leave applications to review right now.</p>
+                              <div className="flex flex-col items-center justify-center p-6 text-slate-400 text-center">
+                                <Inbox className="w-10 h-10 mb-2 opacity-20" />
+                                <p className="text-base font-medium text-slate-600">No Leave Requests Found</p>
+                                <p className="text-xs opacity-60 max-w-[240px]">All caught up!</p>
                               </div>
                             )}
                           </div>

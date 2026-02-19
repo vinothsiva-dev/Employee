@@ -430,7 +430,7 @@ export default function Employees() {
   return (
     <div
       className={`flex flex-col ${state == "expanded" ? "lg:w-[90%]" : "lg:w-full"
-        } w-full max-w-none min-w-0 px-4 lg:px-8 py-6 space-y-4 lg:space-y-8`}
+        } w-full max-w-none min-w-0 px-4 lg:px-8 py-3 space-y-3 lg:space-y-4`}
     >
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
         <div>
@@ -526,24 +526,62 @@ export default function Employees() {
         </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-        <div className="relative rounded-[8px] w-full md:w-1/2 bg-white">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <Input
-            placeholder="Search employees by name, email, or position"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-10 py-5 border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-            aria-label="Search employees"
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex flex-1 flex-col lg:flex-row gap-4 items-start lg:items-center w-full">
+          <div className="relative rounded-[8px] w-full md:w-1/2 bg-white">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Input
+              placeholder="Search employees by name, email, or position"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-10 py-5 border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+              aria-label="Search employees"
+            />
+          </div>
+
+          <EmployeeFilters
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
           />
         </div>
 
-        <EmployeeFilters
-          selectedDepartment={selectedDepartment}
-          setSelectedDepartment={setSelectedDepartment}
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-        />
+        <div className="flex items-center gap-2 bg-slate-100/50 p-1 rounded-lg border border-slate-200 shadow-sm">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  onClick={switchToGrid}
+                  className={viewMode === "grid" ? "!bg-black !text-white shadow-md" : "!text-slate-500"}
+                  size="sm"
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Grid</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={viewMode === "table" ? "secondary" : "ghost"}
+                  onClick={switchToTable}
+                  className={viewMode === "table" ? "!bg-black !text-white shadow-md" : "!text-slate-500"}
+                  size="sm"
+                  aria-label="Table view"
+                >
+                  <Table className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Table</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
 
       {error && (
@@ -583,51 +621,6 @@ export default function Employees() {
         </div>
       ) : (
         <AnimatePresence mode="wait">
-          <div className="flex justify-end w-full">
-            <div className="flex items-center w-[90px] gap-2 pb-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={viewMode === "grid" ? "secondary" : "outline"}
-                      onClick={switchToGrid}
-                      className={
-                        viewMode === "grid"
-                          ? "!bg-black !text-white"
-                          : "!bg-white !shadow-md"
-                      }
-                      size="icon"
-                      aria-label="Grid view"
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Grid</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={viewMode === "table" ? "secondary" : "outline"}
-                      onClick={switchToTable}
-                      className={
-                        viewMode === "table"
-                          ? "!bg-black !text-white"
-                          : "!bg-white !shadow-md"
-                      }
-                      size="icon"
-                      aria-label="Table view"
-                    >
-                      <Table className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Table</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
 
           {viewMode === "grid" && (
             <motion.div
@@ -637,7 +630,7 @@ export default function Employees() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.25 }}
               className={`grid grid-cols-1 sm:grid-cols-2 ${state == "expanded" ? "lg:grid-cols-3" : "lg:grid-cols-4"
-                } gap-6`}
+                } gap-4`}
               layout
             >
               {filteredEmployees.map((employee, index) => (

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -175,7 +176,32 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
       <Separator className="my-3" />
 
       {isLoading ? (
-        <div className="text-sm text-slate-600">Loading Tasks...</div>
+        <div className="grid gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={`task-skeleton-${i}`} className="rounded-lg border bg-white p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+              <div className="flex gap-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : tasks?.length === 0 ? (
         <div className="text-sm text-slate-600">
           No tasks yet. Lean in and create the first one.
@@ -204,8 +230,8 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                         t.priority === "Critical"
                           ? "destructive"
                           : t.priority === "High"
-                          ? "default"
-                          : "secondary"
+                            ? "default"
+                            : "secondary"
                       }
                     >
                       {t.priority}

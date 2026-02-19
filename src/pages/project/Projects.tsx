@@ -230,14 +230,14 @@ const Projects: React.FC = () => {
 
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 10 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={`row-skeleton-${i}`}>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-20 rounded-md" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-20 rounded-md" /></TableCell>
                   </TableRow>
                 ))
               ) : paged.length > 0 ? (
@@ -246,7 +246,7 @@ const Projects: React.FC = () => {
                   const isOpen = expandedId === p._id;
                   return (
                     <React.Fragment key={p.id}>
-                      {!isLoading && (<TableRow className="even:bg-slate-50/40 hover:bg-blue-50/60 transition-colors cursor-pointer">
+                      <TableRow className="even:bg-slate-50/40 hover:bg-blue-50/60 transition-colors cursor-pointer">
                         <TableCell className="font-medium">{p.name}</TableCell>
                         <TableCell className="whitespace-nowrap ">
                           <span className="inline-flex items-center gap-1">
@@ -258,30 +258,6 @@ const Projects: React.FC = () => {
                         <TableCell className="whitespace-nowrap">
                           {p.team ? p.team : "—"}
                         </TableCell>
-                        {/* <TableCell className="max-w-[260px]">
-                          <div className="flex flex-wrap items-center gap-1">
-                            {p.tags?.length
-                              ? p.tags.map((t: any) => (
-                                  <Badge
-                                    key={t}
-                                    variant="outline"
-                                    className="gap-1"
-                                  >
-                                    <TagIcon className="h-3 w-3" />
-                                    {t}
-                                  </Badge>
-                                ))
-                              : "—"}
-                          </div>
-                        </TableCell> */}
-                        {/* <TableCell className="min-w-[160px]">
-                          <div className="flex items-center gap-2">
-                            <Progress value={p.progress} className="h-2 w-28" />
-                            <span className="tabular-nums text-xs text-slate-600">
-                              {p.progress}%
-                            </span>
-                          </div>
-                        </TableCell> */}
                         <TableCell>
                           <Badge
                             variant={statusVariant(p.status)}
@@ -290,14 +266,9 @@ const Projects: React.FC = () => {
                             {p.status}
                           </Badge>
                         </TableCell>
-                        {/* <TableCell className="whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1">
-                            <CalendarIcon className="h-4 w-4 opacity-60" />
-                            {format(due, "PPP")}
-                          </span>
-                        </TableCell> */}
                         <TableCell
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setIsEdit(!isEdit);
                           }}
                         >
@@ -326,7 +297,7 @@ const Projects: React.FC = () => {
                             {isOpen ? "Hide" : "View"}
                           </Button>
                         </TableCell>
-                      </TableRow>)}
+                      </TableRow>
 
                       {/* Inline: you can extract this into <TaskPanel /> one-for-one with your current logic */}
                       {isOpen && (

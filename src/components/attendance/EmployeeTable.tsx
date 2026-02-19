@@ -29,6 +29,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/toast/ToastProvider";
 import { api } from "@/lib/axios";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import FiltersBar from "./FiltersBar";
 import GroupedAttendanceTable from "./GroupedAttendanceTable";
@@ -1044,14 +1045,19 @@ const EmployeeTable: React.FC<Props> = ({
                 </TableHeader>
                 {taskLoading && (
                   <TableBody>
-                    <TableRow>
-                      <TableCell colSpan={9} className="py-6 text-center">
-                        <div className="flex justify-center items-center gap-3">
-                          <div className="loader" />
-                          <span>Loading...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={`skeleton-task-${i}`}>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 )}
                 {!selectedRow && !taskLoading && (
